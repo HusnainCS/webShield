@@ -42,7 +42,6 @@ export async function verifyUser(user) {
         const email = user.email;
         const password = user.password;
         
-        // Find user by email
         const userExists = await User.findOne({ email: email });
         
         if(!userExists){
@@ -50,8 +49,7 @@ export async function verifyUser(user) {
                 error: "User does not exist"
             };
         }
-        
-        // Verify password
+
         const isPasswordValid = await bcrypt.compare(password, userExists.password);
         
         if(isPasswordValid){
@@ -81,11 +79,11 @@ export async function verifyUser(user) {
         error: "Your password is incorrect"
     };
 }
-        
-        } catch (error) {
-            console.error("Error verifying user:", error);
-            return {
-                error: "Internal server error during verification"
-            };
-        }
-    }
+ } 
+ catch (error) {
+        console.error("Error verifying user:", error);
+    return {
+        error: "Internal server error during verification"
+};
+}
+ }

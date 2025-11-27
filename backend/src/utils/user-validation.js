@@ -17,6 +17,6 @@ export async function userValidation(req, res, next) {
         password: validPassword ? "Valid" : "Password must contain: 8+ chars, uppercase, lowercase, number, special character",
         username: validUsername ? "Valid" : "Username must be at least 3 characters"
       }
-    });
-  }
+});
+}
 }

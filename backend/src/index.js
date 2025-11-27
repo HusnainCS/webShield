@@ -14,10 +14,8 @@ const port = process.env.PORT;
 app.use(express.json());
 app.use(cookieParser());
 
-// DATABASE CONNECTIVITY
 connectDB();
 
-// ROUTES 
 app.use("/user", userRouter);
 app.use("/scan",scanRouter);
 

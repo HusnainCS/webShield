@@ -39,9 +39,9 @@ userRouter.get("/profile", checkAuth, (req,res) => {
 
 userRouter.get("/admin", checkAuth , (req,res) => {
   if(req.user.role === "admin"){
-    res.json({message : "Welcome Admin! "});
-  } else {
-    res.json({error : "Admin access is required"});
+     res.json({message : "Welcome Admin! "});
+  }else {
+   res.json({error : "Admin access is required"});
   }
 });
 
