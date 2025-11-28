@@ -12,8 +12,8 @@ const scanSchema = new mongoose.Schema({
     },
     scanType: { 
         type: String, 
-        enum: ['quick', 'full'],
-        default: 'quick'
+        enum: ['nmap','dirb','ssl','nikto','full'],
+        default: 'full'
     },
     status: { 
         type: String, 

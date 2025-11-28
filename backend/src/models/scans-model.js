@@ -1,6 +1,5 @@
 import { Scan } from "./scans-mongo.js"
 
-// CREATE A  SCAN
 export async function createScan (scanData) {
     try {
         const newScan = new Scan(scanData);
@@ -11,8 +10,6 @@ export async function createScan (scanData) {
         throw error;
     }
 }
-
-// GETTING USER's SCAN HISTORY
 export async function userScanHistory(userId){
     try {
         const scans = await Scan.find({userId : userId})
@@ -24,7 +21,6 @@ export async function userScanHistory(userId){
     }
 }
 
-// SCAN BY SPECIFIC ID
 export async function scanById(scanId,userId) {
     try {
         const scan = await Scan.findOne({_id : scanId, userId : userId});
@@ -56,7 +52,7 @@ export async function updateScanResult(scanId,results){
                 status : "completed",
                 results : results
             },
-            { new : true} // Return updated document
+            { new : true} 
         );
         return updatedScan;
     } catch (error){

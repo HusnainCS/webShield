@@ -7,10 +7,10 @@ export async function scanWithNmap(targetUrl) {
     try {
         let domain = targetUrl.replace('https://', '').replace('http://', ''); 
         console.log(`Scanning: ${domain}`);
-        // RUN NMAP
+
     const { stdout } = await execAsync(`nmap -F ${domain}`);
         
-        // SIMPLE RESULT PROCESSING
+    
         const lines = stdout.split('\n');
         const openPorts = [];
         

@@ -5,25 +5,18 @@ import {
     getScanHistory, 
     getScanResults, 
     removeScan 
-} from "../controllers/scan-controller.js"; // IMPORT FROM CONTROLLER
+} from "../controllers/scan-controller.js"; 
 
 const scanRouter = express.Router();
 
 scanRouter.use(checkAuth);
+scanRouter.post("/start", startScan); 
+scanRouter.get("/history", getScanHistory); 
 
-// START A NEW SCAN
-scanRouter.post("/start", startScan); // USE CONTROLLER FUNCTION
+scanRouter.get("/:id", getScanResults); 
+scanRouter.delete("/:id", removeScan); 
 
-// GET SCAN HISTORY
-scanRouter.get("/history", getScanHistory); // USE CONTROLLER FUNCTION
 
-// GET SPECIFIC SCAN BY ID 
-scanRouter.get("/:id", getScanResults); // USE CONTROLLER FUNCTION
-
-// DELETE A SCAN 
-scanRouter.delete("/:id", removeScan); // USE CONTROLLER FUNCTION
-
-// DOWNLOAD PDF REPORT (we'll add this later)
 scanRouter.get("/:id/report", async (req,res) => {
     try {
         const scanId = req.params.id;
