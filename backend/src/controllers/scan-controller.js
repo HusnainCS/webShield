@@ -1,8 +1,8 @@
 import { createScan, deleteScan, scanById, updateScanResult, userScanHistory } from "../models/scans-model.js";
 import { Scan } from "../models/scans-mongo.js";
-import { scanWithDirb } from "../utils/scanners/dirb-scanner.js";
-import { scanWithNikto } from "../utils/scanners/nikto-scanner.js";
+import { scanWithGobuster } from "../utils/scanners/gobuster-scanner.js";
 import { scanWithNmap } from "../utils/scanners/nmap-scanner.js";
+import { scanWithSkipfish } from "../utils/scanners/skipFish-scanner.js";
 import { scanWithSsl } from "../utils/scanners/ssl-scanner.js";
 import { urlValidation } from "../utils/validations/url-validation.js";
 
@@ -32,31 +32,31 @@ export async function startScan(req,res) {
         });
         try {
             let nmapresult = {};
-            let dribResult = [];
-            let niktoResult = [];
             let sslResult = [];
+            let gobusterResult = [];
+            let skipfishResult = [];
+
 
             if(scanType === 'nmap' || scanType === 'full'){
             console.log(`Starting Nmap scan for ${validation.url}`);
             nmapresult = await scanWithNmap(validation.url);
-            }
-            if(scanType === 'dirb' || scanType === 'full'){
-            console.log(`Starting Dirb scan For ${validation.url} `);
-             dribResult = await scanWithDirb(validation.url);
-            }
-            if(scanType == 'nikto' || scanType === 'full'){
-                console.log(`Staring Nikto Scan for: ${validation.url}`);
-                niktoResult = await scanWithNikto(validation.url);
+            } if(scanType === 'skipfish' || scanType === 'full'){
+            console.log(`Starting skipfish scan for ${validation.url}`);
+            skipfishResult = await scanWithSkipfish(validation.url);
             }if(scanType == 'ssl' || scanType === 'full'){
                 console.log(`Staring SSL Scan for: ${validation.url}`);
                 sslResult = await scanWithSsl(validation.url);
+            }if(scanType == 'gobuster' || scanType === 'full'){
+                console.log(`Staring Gobuster Scan for: ${validation.url}`);
+                gobusterResult = await scanWithGobuster(validation.url);
             }
 
             await updateScanResult(result._id, {
                 nmap : nmapresult,
-                nikto : niktoResult,
                 ssl : sslResult,
-                directories : dribResult
+                gobuster : gobusterResult,
+                skipfish : skipfishResult
+        
             });
             console.log(`Scan ${result._id} completed with results`);
             } catch (scanError){

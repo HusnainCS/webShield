@@ -12,7 +12,6 @@ const scanRouter = express.Router();
 scanRouter.use(checkAuth);
 scanRouter.post("/start", startScan); 
 scanRouter.get("/history", getScanHistory); 
-
 scanRouter.get("/:id", getScanResults); 
 scanRouter.delete("/:id", removeScan); 
 

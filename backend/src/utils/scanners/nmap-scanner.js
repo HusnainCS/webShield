@@ -17,19 +17,18 @@ export async function scanWithNmap(targetUrl) {
         for (const line of lines) {
             if (line.includes('open') && line.includes('/tcp')) {
                 const words = line.trim().split(' ');
-                
-                if (words.length >= 3) {
-                    const portNumber = words[0].split('/')[0];
-                    const serviceName = words[2];
+            if (words.length >= 3) {
+                 const portNumber = words[0].split('/')[0];
+                 const serviceName = words[2];
                     
-                    openPorts.push({
-                        port: parseInt(portNumber),
-                        service: serviceName,
-                        status: 'open'
-                    });
-                }
-            }
+        openPorts.push({
+        port: parseInt(portNumber),
+                service: serviceName,
+                status: 'open'
+    }); 
         }
+    }
+}
         
         return {
             openPorts: openPorts,
