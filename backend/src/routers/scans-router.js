@@ -6,7 +6,9 @@ import {
     startScan, 
     getScanHistory, 
     getScanResults, 
-    removeScan 
+    removeScan, 
+    upgradeUserScan,
+    cancelScan
 } from "../controllers/scan-controller.js"; 
 
 const scanRouter = express.Router();
@@ -16,6 +18,8 @@ scanRouter.post("/start", startScan);
 scanRouter.get("/history", getScanHistory); 
 scanRouter.get("/:id", getScanResults); 
 scanRouter.delete("/:id", removeScan); 
+scanRouter.post("/admin/update-limit",upgradeUserScan);
+scanRouter.post("/:id/cancel",cancelScan);
 
 
 scanRouter.get("/:id/report", async (req, res) => {

@@ -41,7 +41,7 @@ export async function generateScanReport(scanData) {
                 // Calculate security score
                 const securityScore = calculateSecurityScore(scanData);
                 
-                // Show grade
+                //w grade
                 doc.fontSize(48)
                    .fillColor(getGradeColor(securityScore.grade))
                    .text(securityScore.grade, { align: 'center' });

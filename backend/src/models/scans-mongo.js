@@ -17,12 +17,12 @@ const scanSchema = new mongoose.Schema({
     },
     status: { 
         type: String, 
-        enum: ['pending','running', 'completed', 'failed'],
+        enum: ['pending','running', 'completed', 'failed', 'cancelled'],
         default: 'pending'
     },
     results: {
         nmap: Object,      
-        skipfish: [],     
+        skipfish: Array,     
         ssl: Object,       
         gobuster : Array
     }
