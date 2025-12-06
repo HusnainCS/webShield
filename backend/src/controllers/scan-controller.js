@@ -155,6 +155,64 @@ export async function getScanHistory(req, res) {
     }
 }
 
+export async function getAllScanHistory(req, res) {
+    try {
+        // Simple query to get all scans
+        const allScans = await Scan.find({})
+            .sort({ createdAt: -1 })
+            .lean(); // Convert to plain JS objects for faster processing
+
+        res.json({
+            success: true,
+            message: "All scan history retrieved",
+            totalScans: allScans.length,
+            scans: allScans
+        });
+
+    } catch (error) {
+        return res.status(500).json({ 
+            success: false,
+            error: error.message 
+        });
+    }
+}
+export async function getUserScanHistoryAdmin(req, res) {
+    try {
+        const userId = req.params.userId; // Get user ID from URL
+        
+        // Get all scans for this user
+        const scans = await Scan.find({ userId: userId })
+            .sort({ createdAt: -1 });
+        
+        // Also get user info
+        const user = await User.findById(userId).select('username email role');
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: "User not found"
+            });
+        }
+        
+        res.json({
+            success: true,
+            user: {
+                userId: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role
+            },
+            totalScans: scans.length,
+            scans: scans
+        });
+
+    } catch (error) {
+        return res.status(500).json({ 
+            success: false,
+            error: error.message 
+        });
+    }
+}
 export async function getScanResults(req, res) {
     try {
         const scanId = req.params.id;
@@ -215,7 +273,7 @@ export async function removeScan(req, res) {
         }
         
         await Scan.findByIdAndUpdate(scanId, {
-            status: "failed",
+            status: "cancelled",
             results: {
                 cancelled: true,
                 error: "Scan cancelled by user",
@@ -238,18 +296,35 @@ export async function removeScan(req, res) {
 
 export async function upgradeUserScan(req,res){
     try {
-        const {userId} = req.body;
+        const { userId, scanLimit } = req.body;
+        
         if(req.user.role !== 'admin'){
             return res.status(403).json({ error : "Admin access is required"});
         }
-        const updatedUser = await User.findByIdAndUpdate(userId,
-            {$inc : {scanLimit : 50}},
-            {new : true}
+        
+        if (!userId) {
+            return res.status(400).json({ error: "User ID is required" });
+        }
+        
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: { scanLimit: scanLimit } }, // Set specific limit
+            { new: true }
         );
+        
+        if (!updatedUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        
         res.json({
-            message : "User scan limit is upgraded successfully",
-            newScanLimit : updatedUser.scanLimit
-        })
+            success: true,
+            message: "User scan limit updated successfully",
+            user: {
+                userId: updatedUser._id,
+                username: updatedUser.username,
+                newScanLimit: updatedUser.scanLimit
+            }
+        });
 
     } catch (error) {
         return res.status(500).json({ error: error.message });

@@ -8,8 +8,11 @@ import {
     getScanResults, 
     removeScan, 
     upgradeUserScan,
-    cancelScan
+    cancelScan,
+    getAllScanHistory,
+    getUserScanHistoryAdmin
 } from "../controllers/scan-controller.js"; 
+import { checkAdmin } from "../middlewares/admin-auth.js";
 
 const scanRouter = express.Router();
 
@@ -17,10 +20,11 @@ scanRouter.use(checkAuth);
 scanRouter.post("/start", startScan); 
 scanRouter.get("/history", getScanHistory); 
 scanRouter.get("/:id", getScanResults); 
-scanRouter.delete("/:id", removeScan); 
-scanRouter.post("/admin/update-limit",upgradeUserScan);
+scanRouter.delete("/:id",checkAdmin, removeScan); 
+scanRouter.post("/admin/update-limit",checkAdmin,upgradeUserScan);
 scanRouter.post("/:id/cancel",cancelScan);
-
+scanRouter.get("/admin/history",checkAdmin,getAllScanHistory);
+scanRouter.get("/admin/user/:userId/history", checkAdmin, getUserScanHistoryAdmin);
 
 scanRouter.get("/:id/report", async (req, res) => {
     try {

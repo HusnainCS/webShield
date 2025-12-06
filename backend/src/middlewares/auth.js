@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-
+import { User } from "../models/users-mongo.js";
 dotenv.config();
 
 export async function checkAuth(req,res,next){
@@ -24,18 +24,3 @@ export async function checkAuth(req,res,next){
 
 }
 
-
-
-
-    // const cookies = req.cookies;
-    // if(cookies.token){
-    //     const signVerify = await jwt.verify(cookies.token, "xzf_tar_yek_");
-    //     console.log("Verify Status: ",signVerify);
-    //     if (signVerify){
-    //         next();
-    //     }else {
-    //         res.send({
-    //             error : "You are not logged in !!!!"
-    //         });
-    //     };
-    // }
