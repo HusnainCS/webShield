@@ -3,23 +3,52 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Debug: Check what environment variables are available
+// console.log('Email Service - Environment Variables:');
+// console.log('EMAIL_USER:', process.env.EMAIL_USER);
+// // console.log('USER_EMAIL:', process.env.USER_EMAIL);
+// console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Set' : 'Not set');
+// console.log('USER_PASSWORD:', process.env.USER_PASSWORD ? 'Set' : 'Not set');
+
+// Use consistent variable names
+const emailUser = process.env.EMAIL_USER 
+const emailPass = process.env.EMAIL_PASSWORD 
+
+if (!emailUser || !emailPass) {
+  console.error('❌ Email credentials missing! Check .env file');
+}
+
 const transporter = nodemailer.createTransport({
-    service : 'gmail',
-    auth :{
-        user: process.env.EMAIL_USER || process.env.USER_EMAIL,
-        pass: process.env.EMAIL_PASSWORD || process.env.USER_PASSWORD
+    service: 'gmail',
+    auth: {
+        user: emailUser,
+        pass: emailPass
+    }
+});
+
+// Test transporter connection
+transporter.verify(function(error, success) {
+    if (error) {
+        console.log('Email transporter error:', error);
+    } else {
+        console.log('Email transporter is ready');
     }
 });
 
 export async function sendResetPassEmail(email, resetToken) {
     try {
-        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+        console.log(`Attempting to send reset email to: ${email}`);
+        
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-        const mailOption = {
-            from : process.env.USER_EMAIL,
-            to : email,
-            subject : "Reset your WebShield Password",
-            html : `
+        console.log('Reset link:', resetLink);
+
+        const mailOptions = {
+            from: `"WebShield Security" <${emailUser}>`,
+            to: email,
+            subject: "Reset your WebShield Password",
+            html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2563eb;">Password Reset Request</h2>
                     
@@ -57,15 +86,17 @@ export async function sendResetPassEmail(email, resetToken) {
                 </div>
             `
         };
-        const info = await transporter.sendMail(mailOption);
-        console.log(`Password reset email sent to : ${email}`);
+
+        console.log('Sending email...');
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`Password reset email sent to: ${email}`);
         console.log(`Email ID: ${info.messageId}`);
 
         return true;
         
     } catch (error) {
-        console.log("Error sending email",error.message);
+        console.error('Error sending email:', error.message);
+        console.error('Full error:', error);
         return false;
     }
-    
 }

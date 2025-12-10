@@ -7,6 +7,7 @@ import { scanWithSkipfish } from "../utils/scanners/skipFish-scanner.js";
 import { scanWithSsl } from "../utils/scanners/ssl-scanner.js";
 import { urlValidation } from "../utils/validations/url-validation.js";
 import { checkDuplicateScan } from "../utils/validations/scan-validaton.js";
+import mongoose from "mongoose";
 
 export async function startScan(req,res) {
     try {
@@ -83,19 +84,38 @@ scanRemaining : userRole === 'user' ? (user.scanLimit - user.usedScan - 1) : "un
             let skipfishResult = [];
 
 
-            if(scanType === 'nmap' || scanType === 'full'){
-            console.log(`Starting Nmap scan for ${validation.url}`);
-            nmapresult = await scanWithNmap(validation.url);
-            } if(scanType === 'skipfish' || scanType === 'full'){
-            console.log(`Starting skipfish scan for ${validation.url}`);
-            skipfishResult = await scanWithSkipfish(validation.url);
-            }if(scanType == 'ssl' || scanType === 'full'){
-                console.log(`Staring SSL Scan for: ${validation.url}`);
-                sslResult = await scanWithSsl(validation.url);
-            }if(scanType == 'gobuster' || scanType === 'full'){
-                console.log(`Staring Gobuster Scan for: ${validation.url}`);
-                gobusterResult = await scanWithGobuster(validation.url);
-            }
+if(scanType === 'nmap' || scanType === 'full'){
+    console.log(`Starting Nmap scan for ${validation.url}`);
+    nmapresult = await scanWithNmap(validation.url);
+}
+if(scanType === 'skipfish' || scanType === 'full'){
+    console.log(`Starting skipfish scan for ${validation.url}`);
+    skipfishResult = await scanWithSkipfish(validation.url);
+    // Store in database if successful
+    if (skipfishResult.success && skipfishResult.htmlContent) {
+        try {
+            const SkipfishReport = mongoose.model('SkipfishReport');
+            await SkipfishReport.create({
+                scanId: result._id,
+                userId: userId,
+                targetUrl: validation.url,
+                htmlContent: skipfishResult.htmlContent,
+                fileSize: skipfishResult.fileSize
+            });
+            console.log('✅ Skipfish report saved to database');
+        } catch (dbError) {
+            console.log('Could not save Skipfish report to DB:', dbError.message);
+        }
+    }
+}
+if(scanType == 'ssl' || scanType === 'full'){
+    console.log(`Staring SSL Scan for: ${validation.url}`);
+    sslResult = await scanWithSsl(validation.url);
+}
+if(scanType == 'gobuster' || scanType === 'full'){
+    console.log(`Staring Gobuster Scan for: ${validation.url}`);
+    gobusterResult = await scanWithGobuster(validation.url);
+}
 
             await updateScanResult(result._id, {
                 nmap : nmapresult,

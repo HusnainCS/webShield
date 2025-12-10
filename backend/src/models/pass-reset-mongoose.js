@@ -15,7 +15,7 @@ const passResetSchema = new mongoose.Schema({
     expiresAt : {
         type : Date,
         required : true,
-        default : () => Date(Date.now() +  60 * 60 * 1000) 
+        default : () => new Date(Date.now() +  60 * 60 * 1000) 
     },
     used : {
         type : Boolean,
@@ -27,4 +27,4 @@ const passResetSchema = new mongoose.Schema({
 
 passResetSchema.index({expiresAt : 1}, {expireAfterSeconds: 0});
 
-export const passReset = mongoose.model('passwordResest',passResetSchema);
+export const passReset = mongoose.model('passwordReset',passResetSchema);

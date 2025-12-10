@@ -212,6 +212,20 @@ function generateAnalysis(scan, sslIssues) {
    // ======================================================
 // SKIPFISH — VULNERABILITIES
 // ======================================================
+if (scan.results?.skipfish) {
+    doc.addPage();
+    doc.fillColor("#dc2626").fontSize(22).text("Skipfish Vulnerability Scan", { underline: true });
+    
+    doc.moveDown(0.5);
+    doc.fillColor("black").fontSize(14)
+       .text('Skipfish scan completed successfully.')
+       .text('Detailed HTML report is available for download.')
+       .text(`Report size: ${scan.results.skipfish.fileSize ? Math.round(scan.results.skipfish.fileSize / 1024) + ' KB' : 'N/A'}`);
+    
+    if (scan.results.skipfish.message) {
+        doc.text(`Status: ${scan.results.skipfish.message}`);
+    }
+}
 const skipfish = scan.results?.skipfish || [];
 
 if (skipfish.length > 0) {
