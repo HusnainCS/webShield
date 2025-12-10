@@ -61,7 +61,7 @@ export async function verifyUser(user) {
                     userId : userExists._id
                 },
                 process.env.JWT_SECRET,
-                { expiresIn : '7d' }
+                { expiresIn : '2d' }
             );
         return {
         success: true,  
