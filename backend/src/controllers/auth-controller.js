@@ -62,7 +62,7 @@ export async function forgotPassword(req, res) {
                 note: "Check spam folder if not received"
             });
         } else {
-            console.log('❌ Failed to send email to:', user.email);
+            console.log('Failed to send email to:', user.email);
             return res.status(500).json({
                 success: false,
                 error: "Failed to send email. Please try again."
