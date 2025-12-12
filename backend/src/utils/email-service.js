@@ -3,14 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Debug: Check what environment variables are available
-// console.log('Email Service - Environment Variables:');
-// console.log('EMAIL_USER:', process.env.EMAIL_USER);
-// // console.log('USER_EMAIL:', process.env.USER_EMAIL);
-// console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Set' : 'Not set');
-// console.log('USER_PASSWORD:', process.env.USER_PASSWORD ? 'Set' : 'Not set');
-
-// Use consistent variable names
 const emailUser = process.env.EMAIL_USER 
 const emailPass = process.env.EMAIL_PASSWORD 
 
@@ -25,8 +17,6 @@ const transporter = nodemailer.createTransport({
         pass: emailPass
     }
 });
-
-// Test transporter connection
 transporter.verify(function(error, success) {
     if (error) {
         console.log('Email transporter error:', error);
