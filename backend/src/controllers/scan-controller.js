@@ -7,7 +7,7 @@ import {
 } from "../models/scans-model.js";
 import { Scan } from "../models/scans-mongo.js";
 import { User } from "../models/users-mongo.js";
-import { scanWithGobuster } from "../utils/scanners/gobuster-scanner.js";
+import { scanWithNikto } from "../utils/scanners/gobuster-scanner.js";
 import { scanWithNmap } from "../utils/scanners/nmap-scanner.js";
 import { scanWithSkipfish } from "../utils/scanners/skipFish-scanner.js";
 import { scanWithSsl } from "../utils/scanners/ssl-scanner.js";
@@ -98,7 +98,7 @@ export async function startScan(req, res) {
     try {
       let nmapresult = {};
       let sslResult = [];
-      let gobusterResult = [];
+      let niktoResult = [];
       let skipfishResult = [];
 
       //   CHOOSING SCANTYPE
@@ -114,15 +114,15 @@ export async function startScan(req, res) {
         console.log(`Staring SSL Scan for: ${validation.url}`);
         sslResult = await scanWithSsl(validation.url);
       }
-      if (scanType == "gobuster" || scanType === "full") {
-        console.log(`Staring Gobuster Scan for: ${validation.url}`);
-        gobusterResult = await scanWithGobuster(validation.url);
+      if (scanType == "nikto" || scanType === "full") {
+        console.log(`Staring Nikto Scan for: ${validation.url}`);
+        niktoResult = await scanWithNikto(validation.url);
       }
 
       await updateScanResult(result._id, {
         nmap: nmapresult,
         ssl: sslResult,
-        gobuster: gobusterResult,
+        nikto: niktoResult,
         skipfish: {
           vulnerabilities: skipfishResult.vulnerabilities || [],
           htmlReport: skipfishResult.htmlReport || null, // HTML as string

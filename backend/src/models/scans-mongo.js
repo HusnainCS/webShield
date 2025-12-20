@@ -13,7 +13,7 @@ const scanSchema = new mongoose.Schema(
     },
     scanType: {
       type: String,
-      enum: ["nmap", "skipfish", "ssl", "gobuster", "full"],
+      enum: ["nmap", "skipfish", "ssl", "nikto", "full"],
       default: "full",
     },
     status: {
@@ -23,7 +23,7 @@ const scanSchema = new mongoose.Schema(
     },
     results: {
       nmap: Object,
-      skipfish: Array,
+      nikto: Array,
       ssl: Object,
       gobuster: Array,
     },
