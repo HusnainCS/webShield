@@ -7,7 +7,7 @@ import {
 } from "../models/scans-model.js";
 import { Scan } from "../models/scans-mongo.js";
 import { User } from "../models/users-mongo.js";
-import { scanWithNikto } from "../utils/scanners/gobuster-scanner.js";
+import { scanWithNikto } from "../utils/scanners/nikto-scanner.js";
 import { scanWithNmap } from "../utils/scanners/nmap-scanner.js";
 import { scanWithSkipfish } from "../utils/scanners/skipFish-scanner.js";
 import { scanWithSsl } from "../utils/scanners/ssl-scanner.js";

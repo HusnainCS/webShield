@@ -1,5 +1,5 @@
 import express from "express";
-import { generateScanReport } from "../utils/pdf-generator.js";
+// import { generateScanReport } from "../utils/pdf-generator.js";
 import { checkAuth } from "../middlewares/auth.js";
 import { Scan } from "../models/scans-mongo.js";
 import {
@@ -13,7 +13,8 @@ import {
   getUserScanHistoryAdmin,
 } from "../controllers/scan-controller.js";
 import { checkAdmin } from "../middlewares/admin-auth.js";
-
+import { htmlToPdf } from "../utils/htmlToPdf.js";
+import { scanWithNmap } from "../utils/scanners/nmap-scanner.js";
 const scanRouter = express.Router();
 
 scanRouter.use(checkAuth);
@@ -32,44 +33,31 @@ scanRouter.get(
 
 scanRouter.get("/:id/report", async (req, res) => {
   try {
-    const scanId = req.params.id;
-    const userId = req.user.userId;
+    const scan = await Scan.findById(req.params.id);
 
-    // Get scan data
-    const scan = await Scan.findOne({ _id: scanId, userId: userId });
-
-    if (!scan) {
-      return res.status(404).json({
-        success: false,
-        error: "Scan not found",
-      });
+    if (!scan || scan.scanType !== "nmap") {
+      return res.status(400).json({ error: "Nmap scan required" });
     }
 
-    // Check if scan is completed
-    if (scan.status !== "completed") {
-      return res.status(400).json({
-        success: false,
-        error: "Scan is still running. Please wait for completion.",
-      });
+    // Run scan again just for demo (later: store result)
+    const nmapResult = await scanWithNmap(scan.targetUrl);
+
+    if (!nmapResult.success) {
+      return res.status(500).json({ error: "Nmap scan failed" });
     }
 
-    // Generate PDF
-    const pdfBuffer = await generateScanReport(scan);
+    const pdf = await htmlToPdf(nmapResult.htmlReport);
 
-    // Send PDF as download
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=webshield-report-${scanId}.pdf`
+      "attachment; filename=nmap-report.pdf"
     );
-    res.send(pdfBuffer);
+
+    res.send(pdf);
+
   } catch (error) {
-    console.error("PDF generation error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to generate PDF report",
-    });
+    res.status(500).json({ error: error.message });
   }
 });
-
 export default scanRouter;
