@@ -10,7 +10,7 @@ dotenv.config();
 // FORGOT PASSWORD
 export async function forgotPassword(req, res) {
   try {
-    console.log("=== FORGOT PASSWORD REQUEST ===");
+    console.log("Forgot Password Request");
 
     const { email } = req.body;
 
@@ -40,7 +40,7 @@ export async function forgotPassword(req, res) {
         type: "password_reset",
       },
       process.env.JWT_RESET_SECRET || "reset_secret_key",
-      { expiresIn: "1h" }
+      { expiresIn: "15m" }
     );
 
     await passReset.create({

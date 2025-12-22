@@ -10,6 +10,7 @@ export async function signUpValidation(req, res, next) {
 
   if (validEmail && validPassword && validUsername) {
     next();
+
   } else {
     res.status(400).json({
       error: "Invalid user data",
@@ -17,7 +18,7 @@ export async function signUpValidation(req, res, next) {
         email: validEmail ? "Valid" : "Invalid email format",
         password: validPassword
           ? "Valid"
-          : "Password must contain: 8+ chars, uppercase, lowercase, number, special character",
+          : "Password must contain: 8+ characters, uppercase, lowercase, Number, Special character",
         username: validUsername
           ? "Valid"
           : "Username must be at least 3 characters",

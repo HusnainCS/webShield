@@ -22,14 +22,7 @@ scanRouter.post("/start", startScan);
 scanRouter.get("/history", getScanHistory);
 scanRouter.get("/:id", getScanResults);
 scanRouter.delete("/:id", checkAdmin, removeScan);
-scanRouter.post("/admin/update-limit", checkAdmin, upgradeUserScan);
 scanRouter.post("/:id/cancel", cancelScan);
-scanRouter.get("/admin/history", checkAdmin, getAllScanHistory);
-scanRouter.get(
-  "/admin/user/:userId/history",
-  checkAdmin,
-  getUserScanHistoryAdmin
-);
 
 scanRouter.get("/:id/report", async (req, res) => {
   try {

@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import scanRouter from "./routers/scans-router.js";
 import authRouter from "./routers/auth-router.js";
 import cors from "cors";
+import adminRouter from "./routers/admin-router.js";
 dotenv.config();
 
 const app = express();
@@ -20,6 +21,7 @@ connectDB();
 app.use("/user", userRouter);
 app.use("/scan", scanRouter);
 app.use("/auth", authRouter);
+app.use("/admin",adminRouter);
 app.get("/", (req, res) => {
   res.json({ message: "WebSheild Backend server is running" });
 });

@@ -25,7 +25,6 @@ userRouter.post("/login", loginValidation, async (req, res) => {
       data: response,
     });
   } else {
-    console.log("RESPONSE IS: ", response);
     res.cookie("token", response.token, {
       httpOnly: true,
     });
@@ -51,12 +50,6 @@ userRouter.get("/profile", checkAuth, async (req, res) => {
   });
 });
 
-userRouter.get("/admin", checkAuth, checkAdmin, (req, res) => {
-  res.json({
-    message: "Welcome Admin",
-    user: req.user,
-  });
-});
 
 userRouter.post("/logout", (req, res) => {
   res.clearCookie("token");
