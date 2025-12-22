@@ -1,4 +1,4 @@
-import { Scan } from "../../models/scans-mongo.js";
+import { Scan } from "../../models/scans-mongoose.js";
 
 export async function checkDuplicateScan(userId, targetUrl, scanType) {
   console.log("Checking duplicate for USER:", {

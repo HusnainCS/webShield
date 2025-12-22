@@ -1,4 +1,4 @@
-import { User } from "../models/users-mongo.js";
+import { User } from "../models/users-mongoose.js";
 export async function checkAdmin(req, res, next) {
   try {
     const userId = req.user.userId;

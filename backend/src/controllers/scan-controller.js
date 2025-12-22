@@ -5,11 +5,11 @@ import {
   updateScanResult,
   userScanHistory,
 } from "../models/scans-model.js";
-import { Scan } from "../models/scans-mongo.js";
-import { User } from "../models/users-mongo.js";
+import { Scan } from "../models/scans-mongoose.js";
+import { User } from "../models/users-mongoose.js";
 import { scanWithNikto } from "../utils/scanners/nikto-scanner.js";
 import { scanWithNmap } from "../utils/scanners/nmap-scanner.js";
-import { scanWithSkipfish } from "../utils/scanners/skipFish-scanner.js";
+import { scanWithSkipfish } from "../utils/scanners/sqlmap-scanner.js";
 import { scanWithSsl } from "../utils/scanners/ssl-scanner.js";
 import { urlValidation } from "../utils/validations/url-validation.js";
 import { checkDuplicateScan } from "../utils/validations/scan-validaton.js";

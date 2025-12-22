@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { User } from "../models/users-mongo.js";
+import { User } from "../models/users-mongoose.js";
 
 import { passReset } from "../models/pass-reset-mongoose.js";
 import { sendResetPassEmail } from "../utils/email-service.js";

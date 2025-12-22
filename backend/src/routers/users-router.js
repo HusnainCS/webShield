@@ -4,9 +4,8 @@ import {
   signUpValidation,
 } from "../utils/validations/user-validation.js";
 import { checkUser, addUser } from "../controllers/users-controller.js";
-import { checkAuth } from "../middlewares/auth.js";
-import { User } from "../models/users-mongo.js";
-import { checkAdmin } from "../middlewares/admin-auth.js";
+import { checkAuth } from "../middlewares/user-auth.js";
+import { User } from "../models/users-mongoose.js";
 
 const userRouter = express.Router();
 

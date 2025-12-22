@@ -25,7 +25,7 @@ const scanSchema = new mongoose.Schema(
       nmap: Object,
       nikto: Array,
       ssl: Object,
-      gobuster: Array,
+      sqlmap: Array,
     },
   },
   {

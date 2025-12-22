@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { User } from "./users-mongo.js";
+import { User } from "./users-mongoose.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 

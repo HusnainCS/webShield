@@ -1,4 +1,4 @@
-import { Scan } from "./scans-mongo.js";
+import { Scan } from "./scans-mongoose.js";
 
 export async function createScan(scanData) {
   try {
