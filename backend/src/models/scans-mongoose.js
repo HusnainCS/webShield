@@ -27,6 +27,11 @@ const scanSchema = new mongoose.Schema(
       ssl: Object,
       sqlmap: Array,
     },
+    aiReport : {
+      type : String,
+      default : ""
+
+    }
   },
   {
     timestamps: true,

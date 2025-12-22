@@ -2,17 +2,18 @@ import {
   createScan,
   deleteScan,
   scanById,
-  updateScanResult,
   userScanHistory,
 } from "../models/scans-model.js";
 import { Scan } from "../models/scans-mongoose.js";
 import { User } from "../models/users-mongoose.js";
 import { scanWithNikto } from "../utils/scanners/nikto-scanner.js";
 import { scanWithNmap } from "../utils/scanners/nmap-scanner.js";
-import { scanWithSkipfish } from "../utils/scanners/sqlmap-scanner.js";
+import { scanWithSqlmap } from "../utils/scanners/sqlmap-scanner.js";
 import { scanWithSsl } from "../utils/scanners/ssl-scanner.js";
 import { urlValidation } from "../utils/validations/url-validation.js";
 import { checkDuplicateScan } from "../utils/validations/scan-validaton.js";
+import { aiReport } from "../utils/aiReport.js";
+import { generateTxtReport } from "../utils/reportFile-generator.js";
 
 //  STARTING A SCAN FUNCTION
 export async function startScan(req, res) {
@@ -97,18 +98,18 @@ export async function startScan(req, res) {
     });
     try {
       let nmapresult = {};
-      let sslResult = [];
+      let sslResult = {};
       let niktoResult = [];
-      let skipfishResult = [];
+      let sqlmapResult = [];
 
       //   CHOOSING SCANTYPE
       if (scanType === "nmap" || scanType === "full") {
         console.log(`Starting Nmap scan for ${validation.url}`);
         nmapresult = await scanWithNmap(validation.url);
       }
-      if (scanType === "skipfish" || scanType === "full") {
-        console.log(`Starting skipfish scan for ${validation.url}`);
-        skipfishResult = await scanWithSkipfish(validation.url);
+      if (scanType === "sqlmap" || scanType === "full") {
+        console.log(`Starting sqlMap scan for ${validation.url}`);
+        sqlmapResult = await scanWithSqlmap(validation.url);
       }
       if (scanType == "ssl" || scanType === "full") {
         console.log(`Staring SSL Scan for: ${validation.url}`);
@@ -118,17 +119,16 @@ export async function startScan(req, res) {
         console.log(`Staring Nikto Scan for: ${validation.url}`);
         niktoResult = await scanWithNikto(validation.url);
       }
+await Scan.findByIdAndUpdate(result._id, {
+  status: "completed",
+  results: {
+    nmap: nmapresult,
+    ssl: sslResult,
+    nikto: niktoResult,
+    sqlmap: sqlmapResult
+  }
+});
 
-      await updateScanResult(result._id, {
-        nmap: nmapresult,
-        ssl: sslResult,
-        nikto: niktoResult,
-        skipfish: {
-          vulnerabilities: skipfishResult.vulnerabilities || [],
-          htmlReport: skipfishResult.htmlReport || null, // HTML as string
-          message: skipfishResult.message || "",
-        },
-      });
       console.log(`Scan ${result._id} completed with results`);
     } catch (scanError) {
       await Scan.findByIdAndUpdate(result._id, {
@@ -350,3 +350,65 @@ export async function upgradeUserScan(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+
+export const generateAIReportForScan = async (req, res) => {
+  try {
+    const scan = await Scan.findById(req.params.id);
+    if (!scan) return res.status(404).json({ error: "Scan not found" });
+
+    if (scan.reportFile) {
+      return res.json({
+        message: "Report already generated",
+        download: scan.reportFile
+      });
+    }
+
+    const summaryText = buildSummaryText(scan);
+    const aiText = await aiReport(summaryText);
+
+    const filePath = generateTxtReport(scan, aiText);
+
+    scan.reportFile = filePath;
+    await scan.save();
+
+    res.json({
+      message: "Report generated successfully",
+      download: filePath
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "Failed to generate report" });
+  }
+};
+
+function buildSummaryText(scan) {
+  let text = `
+Target URL: ${scan.targetUrl}
+Scan Tool: ${scan.scanType}
+Scan Time: ${scan.createdAt}
+
+Open Ports Found:
+`;
+
+  if (scan.results?.nmap?.openPorts?.length > 0) {
+    scan.results.nmap.openPorts.forEach(port => {
+      text += `- ${port}\n`;
+    });
+  } else {
+    text += "No open ports found.\n";
+  }
+
+  text += `
+Explain the above findings in SIMPLE language.
+Tell:
+- What these open ports mean
+- Which ports are risky
+- What should be closed
+- Simple recommendations
+Do NOT invent problems.
+`;
+
+  return text;
+}
+
+

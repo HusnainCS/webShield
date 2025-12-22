@@ -5,16 +5,15 @@ import userRouter from "./routers/users-router.js";
 import cookieParser from "cookie-parser";
 import scanRouter from "./routers/scans-router.js";
 import authRouter from "./routers/auth-router.js";
-import cors from "cors";
 import adminRouter from "./routers/admin-router.js";
+import path from 'path';
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT;
-
-app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
+app.use("/reports",express.static(path.join(process.cwd(), "reports")));
 
 connectDB();
 

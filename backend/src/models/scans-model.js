@@ -45,17 +45,18 @@ export async function deleteScan(scanId, userId) {
 
 export async function updateScanResult(scanId, results) {
   try {
-    const updatedScan = await Scan.findByIdAndUpdate(
+    return await Scan.findByIdAndUpdate(
       scanId,
       {
         status: "completed",
-        results: results,
+        results,
+        completedAt: new Date(),
       },
       { new: true }
     );
-    return updatedScan;
   } catch (error) {
     console.error("Error updating scan results:", error.message);
     throw error;
   }
 }
+
