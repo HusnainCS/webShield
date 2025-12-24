@@ -21,7 +21,7 @@ transporter.verify(function (error, success) {
   if (error) {
     console.log("Email transporter error:", error);
   } else {
-    console.log("Email transporter is ready");
+    console.log("Email transporter is working");
   }
 });
 
@@ -29,20 +29,20 @@ export async function sendResetPassEmail(email, resetToken) {
   try {
     console.log(`Attempting to send reset email to: ${email}`);
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    // const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     console.log("Reset link:", resetLink);
 
     const mailOptions = {
-      from: `"WebShield Security" <${emailUser}>`,
+      from: `"WebShield" <${emailUser}>`,
       to: email,
       subject: "Reset your WebShield Password",
       html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2563eb;">Password Reset Request</h2>
                     
-                    <p>Hello,</p>
+                    <p>Hello, User</p>
                     
                     <p>We received a request to reset your password for your <strong>WebShield Security Scanner</strong> account.</p>
                     
@@ -50,7 +50,7 @@ export async function sendResetPassEmail(email, resetToken) {
                         <a href="${resetLink}" 
                            style="background-color: #2563eb; color: white; padding: 12px 24px; 
                                   text-decoration: none; border-radius: 5px; font-weight: bold;">
-                            🔐 Reset Password
+                            <strong>Reset Password</strong>
                         </a>
                     </div>
                     
