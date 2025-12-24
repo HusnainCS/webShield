@@ -4,7 +4,7 @@ import { checkAuth } from "../middlewares/user-auth.js";
 import {
   startScan,
   getScanHistory,
-  getScanResults,
+  getScanResultsById,
   cancelScan,
 } from "../controllers/user-scan-controller.js";
 import { generateAIReportForScan } from "../controllers/aiReport-controller.js";
@@ -14,7 +14,7 @@ scanRouter.use(checkAuth);
 
 scanRouter.post("/start", startScan);
 scanRouter.get("/history", getScanHistory);
-scanRouter.get("/:id", getScanResults);
+scanRouter.get("/:id", getScanResultsById);
 scanRouter.post("/:id/cancel", cancelScan);
 scanRouter.get("/:id/report",generateAIReportForScan);
 

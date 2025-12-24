@@ -172,7 +172,7 @@ export async function getScanHistory(req, res) {
 
 
 // SCAN'S RESULT
-export async function getScanResults(req, res) {
+export async function getScanResultsById(req, res) {
   try {
     const scanId = req.params.id;
     const userId = req.user.userId;
