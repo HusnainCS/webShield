@@ -1,13 +1,7 @@
 import express from "express";
 import { checkAuth } from "../middlewares/user-auth.js";
 import { checkAdmin } from "../middlewares/admin-auth.js";
-import {
-  removeScan,
-  upgradeUserScan,
-  getAllScanHistory,
-  getUserScanHistoryAdmin
-} from "../controllers/scan-controller.js";
-
+import { removeScan,upgradeUserScan,getUserScanHistoryAdmin,getAllScanHistory } from "../controllers/admin-scan-controller.js";
 const adminRouter = express.Router();
 
 adminRouter.use(checkAuth);

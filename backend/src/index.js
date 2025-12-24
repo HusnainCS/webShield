@@ -7,10 +7,15 @@ import scanRouter from "./routers/scans-router.js";
 import authRouter from "./routers/auth-router.js";
 import adminRouter from "./routers/admin-router.js";
 import path from 'path';
+import cors from "cors";
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT;
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/reports",express.static(path.join(process.cwd(), "reports")));

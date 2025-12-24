@@ -141,7 +141,7 @@ export async function resetPassword(req, res) {
       { password: hashedPassword }
     );
 
-    // MARK TOKEN AS USED
+    // MARKING TOKEN AS USED
     await passReset.findByIdAndUpdate(resetRecord._id, {
       used: true,
     });
@@ -150,7 +150,7 @@ export async function resetPassword(req, res) {
     return res.json({
       success: true,
       message:
-        "Password reset successfully! You can now login with new password.",
+        "Password reset successfully You can now login with new password.",
     });
   } catch (error) {
     console.error("Reset password error:", error.message);

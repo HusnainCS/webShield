@@ -6,7 +6,7 @@ import {
   getScanHistory,
   getScanResults,
   cancelScan,
-} from "../controllers/scan-controller.js";
+} from "../controllers/user-scan-controller.js";
 import { generateAIReportForScan } from "../controllers/aiReport-controller.js";
 
 const scanRouter = express.Router();

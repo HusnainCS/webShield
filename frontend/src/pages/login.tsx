@@ -1,0 +1,52 @@
+import { useState } from "react";
+import { login } from "../api/auth";
+
+const Login = () => {
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const res = await login(form);
+
+    if (res.success) {
+      alert("Login successful");
+      localStorage.setItem("token", res.token);
+    } else {
+      alert(res.message || "Login failed");
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h2>Login</h2>
+
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        onChange={handleChange}
+        required
+      />
+
+      <input
+        type="password"
+        name="password"
+        placeholder="Password"
+        onChange={handleChange}
+        required
+      />
+
+      <button type="submit">Login</button>
+    </form>
+  );
+};
+
+export default Login;

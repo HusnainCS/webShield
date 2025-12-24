@@ -1,6 +1,5 @@
 import {
   createScan,
-  deleteScan,
   scanById,
   userScanHistory,
 } from "../models/scans-model.js";
@@ -170,60 +169,7 @@ export async function getScanHistory(req, res) {
   }
 }
 
-// ALL SCANS HISTORY FOR ADMIN
-export async function getAllScanHistory(req, res) {
-  try {
-    const allScans = await Scan.find({}).sort({ createdAt: -1 }).lean();
 
-    res.json({
-      success: true,
-      message: "All scan history retrieved",
-      totalScans: allScans.length,
-      scans: allScans,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-}
-
-// USER SCAN HISTORY BY ID FROM ADMIN
-export async function getUserScanHistoryAdmin(req, res) {
-  try {
-    const userId = req.params.userId;
-    const scans = await Scan.find({ userId: userId }).sort({ createdAt: -1 });
-    const user = await User.findById(userId).select(
-      "username email role scanLimit"
-    );
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: "User not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      user: {
-        userId: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        scanLimit: user.scanLimit,
-      },
-      totalScans: scans.length,
-      scans: scans,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-}
 
 // SCAN'S RESULT
 export async function getScanResults(req, res) {
@@ -245,26 +191,6 @@ export async function getScanResults(req, res) {
   }
 }
 
-// DELETING A SCAN (FOR ADMIN)
-export async function removeScan(req, res) {
-  try {
-    const scanId = req.params.id;
-    const userId = req.user.userId;
-
-    const result = await deleteScan(scanId, userId);
-
-    if (!result) {
-      return res.status(404).json({ error: "Scan not found" });
-    }
-
-    res.json({
-      message: "Scan deleted successfully",
-      deletedScanId: scanId,
-    });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-}
 
 // CANCALING A SCAN
 export async function cancelScan(req, res) {
@@ -305,38 +231,7 @@ export async function cancelScan(req, res) {
   }
 }
 
-// UPGRADING USER'S SCAN LIMIT (FOR ADMIN)
-export async function upgradeUserScan(req, res) {
-  try {
-    const { userId, scanLimit } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({ error: "User ID is required" });
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: { scanLimit: scanLimit } },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    res.json({
-      success: true,
-      message: "User scan limit updated successfully",
-      user: {
-        userId: updatedUser._id,
-        username: updatedUser.username,
-        newScanLimit: updatedUser.scanLimit,
-      },
-    });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-}
 
 
 

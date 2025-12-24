@@ -43,7 +43,7 @@ SCAN RESULTS:
 =============
 `;
 
-//  NIKTO DONE
+//  NIKTO REPORT
 if (scan.scanType === "nikto") {
   text += `
 [WEB SERVER VULNERABILITY SCAN]
@@ -95,7 +95,7 @@ IMPORTANT INSTRUCTIONS FOR AI:
 `;
 }
 
-    // NMAP DONE
+    // NMAP REPORT
   if (scan.scanType === "nmap") {
     text += `
 Tool: Nmap (Network Mapper)
@@ -157,7 +157,7 @@ IMPORTANT INSTRUCTIONS FOR AI:
   }
 
 
-//   sslscan doNe
+//   sslscan REPORT
 if (scan.scanType === "ssl") {
   text += `
 [SSL/TLS ENCRYPTION SECURITY SCAN]
@@ -236,7 +236,7 @@ IMPORTANT INSTRUCTIONS FOR AI:
 `;
 }
 
-// SQL MAP DONE
+// SQL MAP REPORT
 if (scan.scanType === "sqlmap") {
   text += `
 [DATABASE SECURITY SCAN]
@@ -249,7 +249,7 @@ ACTUAL SCAN DATA:
   
   // Show vulnerability status
   if (scan.results?.sqlmap?.vulnerable === true) {
-    text += `RESULT: ⚠️ POTENTIAL SQL INJECTION VULNERABILITY FOUND\n\n`;
+    text += `RESULT: POTENTIAL SQL INJECTION VULNERABILITY FOUND\n\n`;
     
     if (scan.results.sqlmap.vulnerabilities?.length > 0) {
       text += `VULNERABILITIES DETECTED:\n`;
@@ -278,7 +278,7 @@ ACTUAL SCAN DATA:
     }
     
   } else if (scan.results?.sqlmap?.success === true) {
-    text += `RESULT: ✅ NO SQL INJECTION VULNERABILITIES DETECTED\n\n`;
+    text += `RESULT: NO SQL INJECTION VULNERABILITIES DETECTED\n\n`;
     text += `The website appears secure against SQL injection attacks.\n`;
     
     // Still show scan completion info
@@ -299,7 +299,7 @@ ACTUAL SCAN DATA:
     }
     
   } else {
-    text += `RESULT: ❓ SCAN INCOMPLETE OR FAILED\n\n`;
+    text += `RESULT: SCAN INCOMPLETE OR FAILED\n\n`;
     text += `Could not complete SQL injection security check.\n`;
     if (scan.results?.sqlmap?.error) {
       text += `Error: ${scan.results.sqlmap.error}\n`;
@@ -338,9 +338,6 @@ IMPORTANT INSTRUCTIONS FOR AI:
     DANGER EXPLANATION: [Simple explanation]
     IMMEDIATE ACTIONS: [What to do now]
     RECOMMENDATIONS: [3-4 simple tips]
-
-11. Use warning emojis for vulnerable sites: ⚠️🚨
-12. Use checkmarks for secure sites: ✅
 `;
 }
 
