@@ -19,7 +19,10 @@ Scan Time  : Tue Dec 23 2025 22:45:26 GMT+0500 (Pakistan Standard Time)
 **OPEN PORTS:** 
 No open ports found
 
-**SAFETY STATUS:** Safe
+**SAFETY STATUS: Inconclusive**
+No open ports detected in scanned range.
+This does not guarantee security.
+
 
 **RECOMMENDATIONS:**
 

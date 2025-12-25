@@ -1,5 +1,7 @@
 import { aiReport } from "../utils/aiReport.js";
 import { generateTxtReport } from "../utils/reportFile-generator.js";
+import { Scan } from "../models/scans-mongoose.js";
+import { raw } from "express";
 
 // GENERATING REPORT WITH GROQ AI 
 export const generateAIReportForScan = async (req, res) => {
@@ -129,6 +131,7 @@ ACTUAL SCAN DATA:
     } else {
       text += `Open Ports: NONE FOUND\n`;
       text += `The scan detected NO open ports on your server.\n`;
+      text += `Target May block scans, or allow only HTTPS`
     }
 
     text += `

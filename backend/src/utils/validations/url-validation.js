@@ -24,7 +24,6 @@ export function urlValidation(url) {
   if (dots > 2) {
     return { valid: false, error: "Invalid URL format - too many dots" };
   }
-  ts
   // IF URL HAS DOUBLE DOT AT ONCE 
   if (cleanUrl.includes("..")) {
     return { valid: false, error: "Invalid URL format" };

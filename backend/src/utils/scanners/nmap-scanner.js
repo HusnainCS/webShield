@@ -13,9 +13,7 @@ export async function scanWithNmap(targetUrl) {
     
     console.log(`Scanning ${host} on ports ${ports}`);
     
-    const { stdout, stderr } = await execAsync(
-      `nmap -sT -sV -p ${ports} --open ${host}`
-    );
+    const { stdout, stderr } = await execAsync(`nmap -sT -sV -p ${ports} --open ${host}`);
     
     if (stderr) {
       console.error("Nmap stderror:", stderr);
@@ -36,7 +34,7 @@ export async function scanWithNmap(targetUrl) {
       tool: "nmap",
       success: true,
       openPorts,
-      rawOutput: stdout.substring(0, 1000) // Limit size
+      rawOutput: stdout.substring(0, 1000)
     };
 
   } catch (error) {

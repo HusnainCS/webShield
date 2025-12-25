@@ -126,7 +126,7 @@ await Scan.findByIdAndUpdate(result._id, {
   }
 });
 
-      console.log(`Scan ${result._id} completed with results`);
+      // console.log(`Scan ${result._id} completed with results`);
     } catch (scanError) {
       await Scan.findByIdAndUpdate(result._id, {
         status: "failed",
