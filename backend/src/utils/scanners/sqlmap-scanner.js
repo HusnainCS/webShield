@@ -16,34 +16,15 @@ export async function scanWithSqlmap(targetUrl) {
 
     // Basic SQLMap command
     const command = `
-      timeout 300 sqlmap 
-      -u "${targetUrl}" 
-      --batch 
-      --level=1 
-      --risk=1 
-      --threads=3 
-      --timeout=30 
-      --output-dir="${outputDir}"
-      --flush-session
+      timeout 300 sqlmap -u "${targetUrl}"  --batch --level=1 --risk=1 --threads=3 --timeout=30  --output-dir="${outputDir}"--flush-session
     `.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 
     console.log("Running command:", command.substring(0, 100) + "...");
 
     const { stdout, stderr } = await execAsync(command);
-
-    // Check output for vulnerabilities
     const vulnerabilities = [];
     let vulnerable = false;
-    
-    // Common vulnerability indicators
-    const vulnIndicators = [
-      'is vulnerable',
-      'injection was found',
-      'parameter is vulnerable',
-      'payload:',
-      'Type:',
-      'Title:'
-    ];
+    const vulnIndicators = ['is vulnerable','injection was found','parameter is vulnerable','payload:','Type:','Title:'];
 
     const lines = stdout.split('\n');
     
@@ -65,12 +46,9 @@ export async function scanWithSqlmap(targetUrl) {
         }
       });
     });
-
-    // Clean up temp files
     try {
       fs.rmSync(outputDir, { recursive: true, force: true });
     } catch (e) {
-      // Ignore cleanup errors
     }
 
     return {
@@ -84,8 +62,6 @@ export async function scanWithSqlmap(targetUrl) {
 
   } catch (error) {
     console.error("SQLMap error:", error.message);
-    
-    // Check if it's a timeout (common for SQLMap)
     if (error.message.includes('timeout') || error.message.includes('Timeout')) {
       return {
         tool: "sqlmap",
