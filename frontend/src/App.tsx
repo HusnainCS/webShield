@@ -1,13 +1,13 @@
-import Login from "./pages/login.tsx";
-import Signup from "./pages/signup.tsx";
+import Signup from "./pages/signup";
+import Dashboard from "./pages/dashboard.tsx";
+import { Routes, Route } from "react-router-dom";
 
 function App() {
   return (
-    <div>
-      <Signup />
-      <hr />
-      <Login />
-    </div>
+    <Routes>
+      <Route path = "/" element={<Dashboard />}/>
+      <Route path= "/signup" element={<Signup />} />
+    </Routes>
   );
 }
 
