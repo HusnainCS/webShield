@@ -1,6 +1,6 @@
 import { User } from "../models/users-mongoose.js";
 import { Scan } from "../models/scans-mongoose.js";
-import { deleteScan } from "../models/scans-model.js";
+// import { deleteScan } from "../models/scans-model.js";
 
 // ALL SCANS HISTORY FOR ADMIN
 export async function getAllScanHistory(req, res) {

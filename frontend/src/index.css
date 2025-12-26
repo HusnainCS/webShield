@@ -1,1 +1,23 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark text-white font-sans antialiased;
+  }
+}
+
+@layer components {
+  . cyber-border {
+    @apply border-2 border-primary/30 hover:border-primary transition-colors duration-300;
+  }
+  
+  .cyber-glow {
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+  }
+  
+  .cyber-glow-strong {
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+  }
+}
