@@ -1,73 +1,104 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import Header from './components/common/Header';
-import Footer from './components/common/Footer';
+import { ThemeProvider } from './context/ThemeContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+
+// Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
-import AboutTools from './pages/AboutTools';
-import { useAuth } from './hooks/useAuth';
+import StartScan from './pages/StartScan';
+import ScanProgress from './pages/ScanProgress';
+import ScanResults from './pages/ScanResults';
+import Profile from './pages/Profile';
+import ScanHistory from './pages/ScanHistory';
+import AdminDashboard from './pages/AdminDashboard';
 
-// Protected Route Component
-const ProtectedRoute = ({ children }: { children: React. ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
-};
-
-// Public Route Component (redirect if already logged in)
-const PublicRoute = ({ children }: { children:  React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" />;
-};
-
-function AppRoutes() {
+export default function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-dark">
-      <Header />
-      <main className="flex-grow">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about-tools" element={<AboutTools />} />
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
-  );
-}
-
-function App() {
-  return (
-    <Router>
+    <ThemeProvider>
       <AuthProvider>
-        <AppRoutes />
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            
+            {/* Protected routes - require authentication */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/scan/start" 
+              element={
+                <ProtectedRoute>
+                  <StartScan />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/scan/: scanId" 
+              element={
+                <ProtectedRoute>
+                  <ScanProgress />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/scan/:scanId/results" 
+              element={
+                <ProtectedRoute>
+                  <ScanResults />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/history" 
+              element={
+                <ProtectedRoute>
+                  <ScanHistory />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin only route */}
+            <Route 
+              path="/admin" 
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } 
+            />
+            
+            {/* Catch all - redirect to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
       </AuthProvider>
-    </Router>
+    </ThemeProvider>
   );
 }
-
-export default App;
