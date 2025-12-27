@@ -110,3 +110,47 @@ export async function upgradeUserScan(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+
+export async function getAdminStats(req, res) {
+  try {
+    // Get total users
+    const totalUsers = await User.countDocuments();
+
+    // Get total scans
+    const totalScans = await Scan.countDocuments();
+
+    // Get active scans (running or pending)
+    const activeScans = await Scan.countDocuments({
+      status: { $in: ["pending", "running"] },
+    });
+
+    // Get recent users (last 5)
+    const recentUsers = await User.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("username email role createdAt")
+      .lean();
+
+    // Get recent scans (last 5)
+    const recentScans = await Scan.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("targetUrl scanType status createdAt")
+      .lean();
+
+    res.json({
+      success: true,
+      totalUsers,
+      totalScans,
+      activeScans,
+      recentUsers,
+      recentScans,
+    });
+  } catch (error) {
+    console.error("Admin stats error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to fetch admin statistics",
+    });
+  }
+}
