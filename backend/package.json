@@ -1,13 +1,12 @@
 {
   "name": "webshield-server",
   "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
-  },
-  "engines": {
-    "node": "24.x"
+    "start": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Husnain",
   "license": "ISC",
