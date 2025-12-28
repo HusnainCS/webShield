@@ -4,7 +4,7 @@ import connectDB from './config/database.js';
 import userRouter from './routers/users-router.js';
 import cookieParser from 'cookie-parser';
 import scanRouter from './routers/scans-router.js';
-import authRouter from './routers/auth-router. js';
+import authRouter from './routers/auth-router.js';
 import adminRouter from './routers/admin-router.js';
 import cors from 'cors';
 
