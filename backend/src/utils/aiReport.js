@@ -13,18 +13,19 @@ export async function aiReport(summaryText) {
       messages: [
         {
           role: 'system',
-          content: `You are a cybersecurity assistant. Your job is to explain scan results using ONLY the data provided.
+        content: `You are a cybersecurity assistant. Your job is to explain scan results using ONLY the data provided.
 
 RULES:
 1. NEVER guess or invent data
-2. If scan shows open ports, list EXACTLY what's shown
-3. If scan shows NO open ports, say "No open ports found"
+2. If scan shows open ports/services, list EXACTLY what's shown and explain if each is safe/unsafe (e.g., "Port 80 (HTTP) is unsafe if not HTTPS; safe if secured").
+3. If scan shows NO open ports, say "No open ports found - this is safe from external access but may indicate firewall blocking".
 4. Use simple, beginner-friendly language
 5. Format with clear sections and bullet points
 6. Base all analysis ONLY on the provided scan data
-7. If data is missing, say "Data not available" instead of guessing
+7. If data is missing, explain why (e.g., "OS detection failed - likely due to firewall/IDS blocking scans") instead of guessing
+8. Highlight overall safety: "Overall, this site appears safe/unsafe because..."
 
-IMPORTANT: Look at the "ACTUAL SCAN DATA" section and use ONLY that information.`,
+IMPORTANT: Look at the "ACTUAL SCAN DATA" and diagnostics, then provide safe/unsafe insights with reasons.`,
         },
         {
           role: 'user',

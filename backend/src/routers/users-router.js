@@ -6,6 +6,8 @@ import {
 import { checkUser, addUser } from "../controllers/users-controller.js";
 import { checkAuth } from "../middlewares/user-auth.js";
 import { User } from "../models/users-mongoose.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const userRouter = express.Router();
 
@@ -68,14 +70,14 @@ userRouter.post("/login", loginValidation, async (req, res) => {
       });
     }
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax", // LAX not strict
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: "/",
-    };
-
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProduction, // Only HTTPS in production
+  sameSite: isProduction ? 'strict' : 'lax', // Strict in production
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: "/",
+};
     res.cookie("token", response.token, cookieOptions);
 
     console.log("Login successful");
@@ -95,7 +97,7 @@ userRouter.post("/login", loginValidation, async (req, res) => {
         email: response.user.email,
         role: response.user.role,
         scanLimit: response.user.scanLimit,
-        scansUsed: response.user.scansUsed || 0,
+        usedScan: response.user.usedScan || 0,
       },
     });
   } catch (error) {
@@ -107,9 +109,8 @@ userRouter.post("/login", loginValidation, async (req, res) => {
   }
 });
 
-// PROFILE ROUTE
 // GET USER PROFILE
-userRouter.get('/profile', verifyUser, async (req, res) => {
+userRouter.get('/profile', checkAuth, async (req, res) => {
   try {
     const userId = req.userId;
     
@@ -131,7 +132,7 @@ userRouter.get('/profile', verifyUser, async (req, res) => {
         email: user. email,
         role: user. role,
         scanLimit: user.scanLimit,
-        scansUsed: user.scansUsed,
+        usedScan: user.usedScan,
         agreedToTerms: user.agreedToTerms || false,  
         createdAt: user. createdAt
       }
@@ -144,7 +145,7 @@ userRouter.get('/profile', verifyUser, async (req, res) => {
     });
   }
 });
-// LOGOUT ROUTE
+
 // LOGOUT ROUTE
 userRouter.post('/logout', async (req, res) => {
   try {

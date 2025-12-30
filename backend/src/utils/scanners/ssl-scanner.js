@@ -1,117 +1,174 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from "child_process";
 
-const execAsync = promisify(exec);
+function extractDomain(targetUrl) {
+  try {
+    return new URL(targetUrl).hostname;
+  } catch {
+    return targetUrl
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/.*$/, "")
+      .replace(/^www\./i, "");
+  }
+}
+
+function isValidDomain(d) {
+  return /^[a-zA-Z0-9.-]+$/.test(d) && d.length >= 3;
+}
 
 export async function scanWithSsl(targetUrl) {
   try {
-    const domain = targetUrl
-      .replace(/^http?:\/\//, '')
-      .replace(/^https?:\/\//, '')
-      .replace(/\/.*$/, '')
-      .replace(/^www\./, '');
+    const domain = extractDomain(targetUrl);
 
-    console.log(`SSL scanning: ${domain}`);
-
-    const command = `sslscan --no-colour ${domain}`;
-    const { stdout, stderr } = await execAsync(command, { timeout: 60000 });
-
-    if (stderr && !stderr.includes('openssl')) {
-      console.error('SSLScan stderr:', stderr);
-    }
-
-    const issues = [];
-    const lines = stdout.split('\n');
-    lines.forEach(line => {
-      const trimmed = line.trim();
-
-      if (
-        trimmed.includes('SSLv') ||
-        trimmed.includes('TLSv1.0') ||
-        trimmed.includes('TLSv1.1') ||
-        trimmed.includes('weak') ||
-        trimmed.includes('WEAK') ||
-        trimmed.includes('INSECURE')
-      ) {
-        let cleanLine = trimmed
-          .replace(/^\s*[├└│─]+\s*/, '')
-          .replace(/\s+/g, ' ')
-          .trim();
-        if (cleanLine && !issues.includes(cleanLine)) {
-          issues.push(cleanLine);
-        }
-      }
-      if (
-        trimmed.includes('expired') ||
-        trimmed.includes('self-signed') ||
-        trimmed.includes('Invalid') ||
-        trimmed.includes('revoked')
-      ) {
-        issues.push(`Certificate Issue: ${trimmed}`);
-      }
-    });
-
-    const hasTLS12 = stdout.includes('TLSv1.2');
-    const hasTLS13 = stdout.includes('TLSv1.3');
-    if (issues.length === 0 && (hasTLS12 || hasTLS13)) {
-      issues.push('No security issues detected');
-    }
-
-    return {
-      tool: 'sslscan',
-      success: true,
-      totalIssues: issues.length,
-      issues: issues.slice(0, 10),
-      rawOutput: stdout.substring(0, 2000),
-      domain: domain,
-    };
-  } catch (error) {
-    console.error('SSL scan error:', error.message);
-
-    // error message for connection failures
-    if (
-      error.message.includes('Connection refused') ||
-      error.message.includes('timed out') ||
-      error.message.includes('Timed out') ||
-      error.message.includes('ECONNREFUSED')
-    ) {
+    if (!isValidDomain(domain)) {
       return {
-        tool: 'ssl',
+        tool: "sslscan",
         success: false,
-        error: 'Cannot connect to SSL/TLS port',
-        totalIssues: 1,
-        criticalIssues: 1,
-        warnings: 0,
-        passed: 0,
-        issues: [
-          ' SSL/TLS Not Available',
-          `ℹ The website ${targetUrl} does not support HTTPS on port 443`,
-          'ℹ This is a HTTP-only website (no encryption)',
-          'Recommendation: Enable HTTPS for secure communication',
-        ],
-        certificateInfo: {
-          error: 'No SSL/TLS certificate found',
-        },
-        rawOutput: `Connection failed: Cannot connect to port 443\nThe target does not support HTTPS.`,
-        target: targetUrl,
-        summary: 'Website does not support HTTPS',
+        error: "Invalid domain",
+        domain,
       };
     }
 
-    // Other errors
+    const args = [
+  "--no-colour",
+  // REMOVE THIS: "--show-client-cas",  // This makes output huge!
+  domain,
+];
+
+    return await new Promise((resolve) => {
+      const child = spawn("sslscan", args, {
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+
+      let stdout = "";
+      let stderr = "";
+      const MAX_RAW = 10000;
+      // const TIMEOUT_MS = 180000;
+      // const timer = setTimeout(() => {
+      //   try {
+      //     child.kill("SIGTERM");
+      //   } catch {}
+      // }, TIMEOUT_MS);
+
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk.toString();
+        if (stdout.length > MAX_RAW) stdout = stdout.slice(-MAX_RAW);
+      });
+
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk.toString();
+        if (stderr.length > MAX_RAW) stderr = stderr.slice(-MAX_RAW);
+      });
+
+      child.on("error", (err) => {
+        clearTimeout(timer);
+        resolve({
+          tool: "sslscan",
+          success: false,
+          error: err.message,
+          rawOutput: stderr || stdout,
+          domain,
+        });
+      });
+
+      child.on("close", () => {
+        clearTimeout(timer);
+
+        const lines = stdout
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+        const issues = [];
+        const critical = [];
+        const weakCiphers = [];
+        const deprecatedProtocols = [];
+        const certificateIssues = [];
+
+        const cert = {};
+
+        lines.forEach((line) => {
+          const low = line.toLowerCase();
+
+          if (
+            low.includes("sslv2") ||
+            low.includes("sslv3") ||
+            low.includes("tlsv1.0") ||
+            low.includes("tlsv1.1")
+          ) {
+            deprecatedProtocols.push(line);
+            critical.push(`Deprecated protocol: ${line}`);
+          }
+
+          if (
+            low.includes("weak") ||
+            low.includes("null") ||
+            low.includes("export") ||
+            low.includes("des") ||
+            low.includes("rc4")
+          ) {
+            weakCiphers.push(line);
+            issues.push(`Weak cipher: ${line}`);
+          }
+
+          if (
+            low.includes("expired") ||
+            low.includes("self-signed") ||
+            low.includes("invalid") ||
+            low.includes("revoked") ||
+            low.includes("mismatch")
+          ) {
+            certificateIssues.push(line);
+            critical.push(`Certificate issue: ${line}`);
+          }
+
+          // Extract certificate metadata if present
+          const subject = line.match(/^Subject:\s*(.+)$/i);
+          if (subject) cert.subject = subject[1].trim();
+
+          const issuer = line.match(/^Issuer:\s*(.+)$/i);
+          if (issuer) cert.issuer = issuer[1].trim();
+
+          const notBefore = line.match(/^Not valid before:\s*(.+)$/i);
+          if (notBefore) cert.validFrom = notBefore[1].trim();
+
+          const notAfter = line.match(/^Not valid after:\s*(.+)$/i);
+          if (notAfter) cert.validTo = notAfter[1].trim();
+
+          const sig = line.match(/^Signature Algorithm:\s*(.+)$/i);
+          if (sig) cert.signatureAlgorithm = sig[1].trim();
+        });
+
+        const hasTLS12 = stdout.includes("TLSv1.2");
+        const hasTLS13 = stdout.includes("TLSv1.3");
+
+        const allIssues = [...critical, ...issues, ...certificateIssues];
+        if (allIssues.length === 0 && (hasTLS12 || hasTLS13)) {
+          allIssues.push("No security issues detected - TLS 1.2/1.3 supported");
+        }
+
+        resolve({
+          tool: "sslscan",
+          success: true,
+          totalIssues: allIssues.length,
+          issues: allIssues.slice(0, 50),
+          criticalIssues: critical,
+          weakCiphers,
+          deprecatedProtocols,
+          certificateIssues,
+          certificateDetails: cert,
+          supportsTLS12: hasTLS12,
+          supportsTLS13: hasTLS13,
+          rawOutput: stdout,
+          domain,
+        });
+      });
+    });
+  } catch (err) {
     return {
-      tool: 'ssl',
+      tool: "sslscan",
       success: false,
-      error: error.message,
-      totalIssues: 1,
-      criticalIssues: 1,
-      warnings: 0,
-      passed: 0,
-      issues: [` Scan error: ${error.message}`],
-      certificateInfo: {},
-      rawOutput: error.stdout || error.stderr || `Error: ${error.message}`,
-      target: targetUrl,
-      summary: 'SSL/TLS scan failed',
+      error: err.message || "Unexpected error",
+      rawOutput: "",
+      domain: targetUrl,
     };
   }
 }

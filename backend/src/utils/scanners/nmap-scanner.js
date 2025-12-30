@@ -1,11 +1,8 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { spawn } from "child_process";
 
 export async function scanWithNmap(targetUrl) {
   try {
-    console.log('Starting Nmap scan for:', targetUrl);
+    console.log('Starting Nmap Scan for:  ', targetUrl);
 
     // Extract hostname from URL
     let hostname = targetUrl;
@@ -18,40 +15,95 @@ export async function scanWithNmap(targetUrl) {
       console.log('Using original target as hostname:', hostname);
     }
 
-    //  Nmap command - scan common ports quickly
-    const command = `timeout 120 nmap -Pn -T4 --top-ports 100 ${hostname}`;
+    console.log('start scanning nmap for', hostname);
+
+    // Simple Nmap command (similar to your original)
+    const command = `timeout 180 nmap -Pn -T4 -sV -sC -O -v --top-ports 1000 --max-retries 1 --host-timeout 240s ${hostname}`;
 
     console.log('Running Nmap command:', command);
 
+    // Execute Nmap scan
     const { stdout, stderr } = await execAsync(command, {
-      maxBuffer: 1024 * 1024 * 10,
+      maxBuffer: 1024 * 1024 * 10, 
     });
 
-    console.log('Nmap scan completed');
+    console.log('Nmap scan completed.  Output length:', stdout.length);
 
-    // Parse open ports from output
+    // Parse Nmap output (simplified like Nikto)
     const openPorts = [];
+    const serviceVersions = [];
+    const vulnerabilities = [];
+    const cveList = [];
     const lines = stdout.split('\n');
 
     lines.forEach(line => {
-      // Look for lines with port information:  "80/tcp   open  http"
-      if (line.match(/^\d+\/tcp\s+open/)) {
-        openPorts.push(line.trim());
+      const trimmed = line.trim();
+      
+      // Open port lines like "22/tcp open  ssh"
+      if (/^\d+\/tcp\s+open/i.test(trimmed)) {
+        openPorts.push(trimmed);
+      }
+      
+      // Service version info (lines starting with | or containing version info)
+      if (trimmed.startsWith('|') && trimmed.includes(':')) {
+        serviceVersions.push(trimmed);
+      }
+      
+      // CVE detection
+      const cves = trimmed.match(/CVE-\d{4}-\d{4,7}/gi);
+      if (cves) {
+        cves.forEach(cve => {
+          if (!cveList.includes(cve.toUpperCase())) {
+            cveList.push(cve.toUpperCase());
+          }
+        });
+        vulnerabilities.push(trimmed);
+      }
+      
+      // Other vulnerability indicators
+      if (/VULNERABLE|vulnerable|security hole|exploitable/i.test(trimmed)) {
+        vulnerabilities.push(trimmed);
       }
     });
 
-    console.log(`Nmap found ${openPorts.length} open ports`);
+    // Extract OS detection
+    let osDetection = null;
+    for (const line of lines) {
+      if (/OS details:|Running:|Aggressive OS guesses:/i.test(line)) {
+        osDetection = line;
+        break;
+      }
+    }
+
+    console.log(`Nmap scan found ${openPorts.length} open ports`);
 
     return {
       tool: 'nmap',
-      success: true,
-      openPorts: openPorts,
+      success: openPorts.length > 0 || cveList.length > 0,
+      openPorts: openPorts.slice(0, 50),
       totalPorts: openPorts.length,
+      serviceVersions: serviceVersions.slice(0, 50),
+      vulnerabilities: vulnerabilities.slice(0, 50),
+      cveList: cveList.slice(0, 20),
+      osDetection: osDetection,
       rawOutput: stdout.substring(0, 5000),
       target: hostname,
     };
   } catch (error) {
     console.error('Nmap scan error:', error.message);
+
+    // Check if error is due to command timeout
+    if (error.killed) {
+      return {
+        tool: 'nmap',
+        success: false,
+        error: 'Scan timed out after 3 minutes',
+        openPorts: [],
+        totalPorts: 0,
+        rawOutput: error.stdout || 'Scan timed out',
+        target: targetUrl,
+      };
+    }
 
     return {
       tool: 'nmap',

@@ -1,9 +1,9 @@
-import { createUser } from '../models/users-model.js';
-import { User } from '../models/users-mongoose.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { createUser } from "../models/users-model.js";
+import { User } from "../models/users-mongoose.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-// Add new user (signup)
+// Add new user
 export async function addUser(user) {
   try {
     const result = await createUser(user);
@@ -13,7 +13,7 @@ export async function addUser(user) {
   }
 }
 
-// Check user credentials (login)
+// Check user credentials
 export async function checkUser(user) {
   try {
     // Accept both "email" and "emailOrUsername"
@@ -23,14 +23,14 @@ export async function checkUser(user) {
     if (!identifier) {
       return {
         success: false,
-        error: 'Email or username is required',
+        error: "Email or username is required",
       };
     }
 
     if (!password) {
       return {
         success: false,
-        error: 'Password is required',
+        error: "Password is required",
       };
     }
 
@@ -41,7 +41,7 @@ export async function checkUser(user) {
     if (!userExists) {
       return {
         success: false,
-        error: 'User does not exist',
+        error: "User does not exist",
       };
     }
 
@@ -51,7 +51,7 @@ export async function checkUser(user) {
     if (!isPasswordValid) {
       return {
         success: false,
-        error: 'Your password is incorrect',
+        error: "Your password is incorrect",
       };
     }
 
@@ -64,12 +64,12 @@ export async function checkUser(user) {
         userId: userExists._id,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: "7d" }
     );
 
     return {
       success: true,
-      message: 'You are logged in',
+      message: "You are logged in",
       token: token,
       user: {
         _id: userExists._id,
@@ -78,14 +78,14 @@ export async function checkUser(user) {
         email: userExists.email,
         role: userExists.role,
         scanLimit: userExists.scanLimit,
-        scansUsed: userExists.usedScan || 0,
+        usedScan: userExists.scanUsed || 0,
       },
     };
   } catch (error) {
-    console.error('Error verifying user:', error);
+    console.error("Error verifying user:", error);
     return {
       success: false,
-      error: 'Internal server error during verification',
+      error: "Internal server error during verification",
     };
   }
 }
@@ -95,8 +95,8 @@ export async function loginUser(req, res) {
   try {
     const { email, password, emailOrUsername } = req.body;
 
-    console.log('=== LOGIN REQUEST ===');
-    console.log('Email/Username:', email || emailOrUsername);
+    console.log("=== LOGIN REQUEST ===");
+    console.log("Email/Username:", email || emailOrUsername);
 
     // Call checkUser
     const result = await checkUser({
@@ -106,7 +106,7 @@ export async function loginUser(req, res) {
     });
 
     if (!result.success) {
-      console.log('Login failed:', result.error);
+      console.log("Login failed:", result.error);
       return res.status(401).json({
         success: false,
         error: result.error,
@@ -114,15 +114,15 @@ export async function loginUser(req, res) {
     }
 
     // Set cookie with token
-    res.cookie('token', result.token, {
+    res.cookie("token", result.token, {
       httpOnly: true,
       secure: false,
-      sameSite: 'lax',
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
+      path: "/",
     });
 
-    console.log(' Login successful, cookie set for:', result.user.username);
+    console.log(" Login successful, cookie set for:", result.user.username);
 
     // Send response without token (it's in cookie)
     res.json({
@@ -131,10 +131,10 @@ export async function loginUser(req, res) {
       user: result.user,
     });
   } catch (error) {
-    console.error(' Login error:', error);
+    console.error(" Login error:", error);
     res.status(500).json({
       success: false,
-      error: 'Login failed',
+      error: "Login failed",
     });
   }
 }
@@ -144,15 +144,15 @@ export async function signupUser(req, res) {
   try {
     const { username, email, password } = req.body;
 
-    console.log('=== SIGNUP REQUEST ===');
-    console.log('Username:', username);
-    console.log('Email:', email);
+    console.log("=== SIGNUP REQUEST ===");
+    console.log("Username:", username);
+    console.log("Email:", email);
 
     // Validate input
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'All fields are required',
+        error: "All fields are required",
       });
     }
 
@@ -164,7 +164,10 @@ export async function signupUser(req, res) {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        error: existingUser.email === email ? 'Email already registered' : 'Username already taken',
+        error:
+          existingUser.email === email
+            ? "Email already registered"
+            : "Username already taken",
       });
     }
 
@@ -176,9 +179,9 @@ export async function signupUser(req, res) {
       username,
       email,
       password: hashedPassword,
-      role: 'user',
+      role: "user",
       scanLimit: 10,
-      usedScan: 0,
+      scanUsed: 0,
     });
 
     // Generate token
@@ -190,23 +193,23 @@ export async function signupUser(req, res) {
         userId: newUser._id,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: "7d" }
     );
 
     // Set cookie
-    res.cookie('token', token, {
+    res.cookie("token", token, {
       httpOnly: true,
       secure: false,
-      sameSite: 'lax',
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
+      path: "/",
     });
 
-    console.log('Signup successful, cookie set for:', newUser.username);
+    console.log("Signup successful, cookie set for:", newUser.username);
 
     res.status(201).json({
       success: true,
-      message: 'User created successfully',
+      message: "User created successfully",
       user: {
         _id: newUser._id,
         userId: newUser._id,
@@ -214,41 +217,41 @@ export async function signupUser(req, res) {
         email: newUser.email,
         role: newUser.role,
         scanLimit: newUser.scanLimit,
-        scansUsed: 0,
+        usedScan: 0,
       },
     });
   } catch (error) {
-    console.error(' Signup error:', error);
+    console.error(" Signup error:", error);
     res.status(500).json({
       success: false,
-      error: 'Signup failed',
+      error: "Signup failed",
     });
   }
 }
 // Logout handler
 export async function logoutUser(req, res) {
   try {
-    console.log('LOGOUT REQUEST');
+    console.log("LOGOUT REQUEST");
 
     // Clear cookie
-    res.clearCookie('token', {
+    res.clearCookie("token", {
       httpOnly: true,
       secure: false,
-      sameSite: 'lax',
-      path: '/',
+      sameSite: "lax",
+      path: "/",
     });
 
-    console.log('Logout successful');
+    console.log("Logout successful");
 
     res.json({
       success: true,
-      message: 'Logged out successfully',
+      message: "Logged out successfully",
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
     res.status(500).json({
       success: false,
-      error: 'Logout failed',
+      error: "Logout failed",
     });
   }
 }
@@ -258,19 +261,19 @@ export async function getUserProfile(req, res) {
   try {
     const userId = req.user.userId;
 
-    console.log('=== GET PROFILE REQUEST ===');
-    console.log('User ID:', userId);
+    console.log("=== GET PROFILE REQUEST ===");
+    console.log("User ID:", userId);
 
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(userId).select("-password");
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User not found',
+        error: "User not found",
       });
     }
 
-    console.log('Profile fetched for:', user.username);
+    console.log("Profile fetched for:", user.username);
 
     res.json({
       success: true,
@@ -281,15 +284,15 @@ export async function getUserProfile(req, res) {
         email: user.email,
         role: user.role,
         scanLimit: user.scanLimit,
-        scansUsed: user.usedScan || 0,
+        usedScan: user.usedScan || 0,
         createdAt: user.createdAt,
       },
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error("Get profile error:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch profile',
+      error: "Failed to fetch profile",
     });
   }
 }

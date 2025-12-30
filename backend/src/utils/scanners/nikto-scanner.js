@@ -7,25 +7,23 @@ export async function scanWithNikto(targetUrl) {
   try {
     console.log('Starting Nikto Scan for:  ', targetUrl);
 
-    // Extract hostname from URL
+    // Extract hostname
     let hostname = targetUrl;
     try {
       const urlObj = new URL(targetUrl);
       hostname = urlObj.hostname;
       console.log('Extracted hostname:', hostname);
     } catch (err) {
-      // If URL parsing fails, assume it's already a hostname
       console.log('Using original target as hostname:', hostname);
     }
 
     console.log('start scanning nikto for', hostname);
 
-    // Nikto command
-    const command = `timeout 180 nikto -h ${hostname} -Plugins outdated,dirs`;
+    // USE ONLY -Tuning b (no -Plugins outdated)
+    const command = `timeout 180 nikto -h ${hostname} -port 80 -Tuning b -maxtime 120s -nointeractive`;
 
     console.log('Running Nikto command:', command);
 
-    // Execute Nikto scan
     const { stdout, stderr } = await execAsync(command, {
       maxBuffer: 1024 * 1024 * 10, 
     });
@@ -37,19 +35,21 @@ export async function scanWithNikto(targetUrl) {
     const lines = stdout.split('\n');
 
     lines.forEach(line => {
-      // Look for vulnerability indicators
+      // Look for findings (lines starting with + that aren't metadata)
       if (
-        line.includes('+') &&
-        !line.includes('Nikto v') &&
-        !line.includes('Target IP: ') &&
+        line.startsWith('+ ') &&
+        !line.includes('Target IP:') &&
         !line.includes('Target Hostname:') &&
         !line.includes('Target Port:') &&
         !line.includes('Start Time:') &&
+        !line.includes('End Time:') &&
         !line.includes('Server:') &&
-        line.length > 10 &&
-        line.length < 500
+        !line.includes('requests:') &&
+        !line.includes('item(s) reported') &&
+        !line.includes('host(s) tested') &&
+        line.length > 10
       ) {
-        const cleanedLine = line.trim();
+        const cleanedLine = line.substring(2).trim();
         if (cleanedLine && !findings.includes(cleanedLine)) {
           findings.push(cleanedLine);
         }
@@ -69,7 +69,6 @@ export async function scanWithNikto(targetUrl) {
   } catch (error) {
     console.error('Nikto scan error:', error.message);
 
-    // Check if error is due to command timeout
     if (error.killed) {
       return {
         tool: 'nikto',

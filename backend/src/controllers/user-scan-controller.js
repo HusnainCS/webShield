@@ -1,355 +1,352 @@
-import { createScan, scanById, userScanHistory } from '../models/scans-model.js';
-import { Scan } from '../models/scans-mongoose.js';
-import { User } from '../models/users-mongoose.js';
-import { scanWithNikto } from '../utils/scanners/nikto-scanner.js';
-import { scanWithNmap } from '../utils/scanners/nmap-scanner.js';
-import { scanWithSqlmap } from '../utils/scanners/sqlmap-scanner.js';
-import { scanWithSsl } from '../utils/scanners/ssl-scanner.js';
-import { urlValidation } from '../utils/validations/url-validation.js';
-import { getScanStatistics } from '../utils/validations/scan-validaton.js';
+import { Scan } from "../models/scans-mongoose.js";
+import { User } from "../models/users-mongoose.js";
+import { urlValidation } from "../utils/validations/url-validation.js";
+import {
+  startProcess,
+  killProcess,
+  hasProcess,
+} from "../services/scan-runner.js";
+import { validateHostname } from "../utils/validations/hostname-validation.js";
 
-//  STARTING A SCAN FUNCTION
+const ALLOWED_SCANS = ["nmap", "nikto", "ssl", "sqlmap"];
+
+/* START NEW SCAN */
 export async function startScan(req, res) {
   try {
-    const { targetUrl, scanType } = req.body;
-    const userId = req.user.userId;
-    const userRole = req.user.role;
-    const user = await User.findById(userId);
-
-    console.log('START SCAN REQUEST');
-    console.log('User:', req.user.username);
-    console.log('Target:', targetUrl);
-    console.log('Type:', scanType);
-
-    // CHECK IF SCAN IS ALREADY RUNNING
-    const runningScan = await Scan.findOne({
-      userId: userId,
-      status: 'running',
-    });
-
-    if (runningScan) {
-      return res.status(409).json({
-        error: 'A scan is already running',
-        message: 'Please wait for your current scan to complete',
-        currentScanId: runningScan._id,
-        startedAt: runningScan.createdAt,
-        estimatedTimeToComplete: '2-3 minutes',
-      });
+    const userId = req.userId || req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Unauthorized" });
     }
 
-    // CHECK SCAN LIMIT FOR REGULAR USERS
-    if (userRole === 'user') {
-      if (user.usedScan >= user.scanLimit) {
-        return res.status(403).json({
-          error: `Scan limit reached, you have used ${user.usedScan}/${user.scanLimit} scans. `,
-          message: 'Upgrade your account to get unlimited access or contact the admin',
-          note: 'You can also check your Scan limit in your profile',
-        });
-      }
+    const { targetUrl, scanType } = req.body || {};
+
+    if (!targetUrl || !scanType) {
+      return res
+        .status(400)
+        .json({ success: false, error: "targetUrl and scanType are required" });
     }
 
-    // URL VALIDATION
+    // Validate scanType
+    if (!ALLOWED_SCANS.includes(scanType)) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid scanType" });
+    }
+
+    // Validate URL and normalize
     const validation = urlValidation(targetUrl);
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      return res.status(400).json({ success: false, error: validation.error });
     }
+    const finalUrl = validation.url;
 
-    const scanStats = await getScanStatistics(userId, validation.url, scanType || 'full');
+    // Prevent duplicate concurrent scans for same user+target+type
+    const existing = await Scan.findOne({
+      userId,
+      targetUrl: finalUrl,
+      scanType,
+      status: { $in: ["pending", "running"] },
+    }).lean();
 
-    console.log(scanStats.message);
+    if (existing) {
+      // If there is an in-memory process for that scan id, return that info
+      if (hasProcess(String(existing._id))) {
+        return res.status(409).json({
+          success: false,
+          error: "A scan for this target and type is already running",
+          scanId: existing._id,
+          status: existing.status,
+        });
+      }
 
-    // CREATE SCAN RECORD
-    const scanData = {
-      userId: userId,
-      targetUrl: validation.url,
-      scanType: scanType || 'full',
-      status: 'running',
-    };
-
-    const result = await createScan(scanData);
-
-    // INCREMENT USER'S SCAN COUNTER
-    if (userRole === 'user') {
-      await User.findByIdAndUpdate(userId, {
-        $inc: { usedScan: 1 },
+      // No in-memory process found but DB has pending/running - return conflict to avoid duplicate
+      return res.status(409).json({
+        success: false,
+        error: "A scan for this target and type is already pending/running",
+        scanId: existing._id,
+        status: existing.status,
       });
     }
 
-    console.log('Scan created with ID:', result._id.toString());
+    // Create scan document with status pending
+    const scanDoc = new Scan({
+      userId,
+      targetUrl: finalUrl,
+      scanType,
+      status: "pending",
+      results: {},
+    });
 
-    // SEND IMMEDIATE RESPONSE
-    res.json({
+    const savedScan = await scanDoc.save();
+
+    // Atomically increment user's usedScan and get updated user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $inc: { usedScan: 1 } },
+      { new: true }
+    ).select("-password");
+
+    // Mark scan as running and attach startedAt
+    await Scan.findByIdAndUpdate(savedScan._id, {
+      status: "running",
+      updatedAt: new Date(),
+      startedAt: new Date(),
+    });
+
+    // Respond to client immediately with scanId
+    res.status(201).json({
       success: true,
-      message: 'Scan started successfully',
-      scanId: result._id.toString(),
+      message: "Scan started",
+      scanId: savedScan._id,
       scan: {
-        _id: result._id.toString(),
-        id: result._id.toString(),
-        targetUrl: validation.url,
-        scanType: scanType,
-        status: 'running',
-        createdAt: result.createdAt,
+        _id: savedScan._id,
+        targetUrl: finalUrl,
+        scanType,
+        status: "running",
       },
-      status: 'running',
-      scanType: scanType,
-      scanRemaining: userRole === 'user' ? user.scanLimit - user.usedScan - 1 : 'unlimited',
-      scanStatistics: {
-        totalScansOfThisType: scanStats.totalScansOfType,
-        previousScansOfThisUrl: scanStats.urlScanCount,
-        lastScannedThisUrl: scanStats.lastScanDate,
-        note:
-          scanStats.urlScanCount > 0
-            ? `You have scanned this URL ${scanStats.urlScanCount} time(s) before with ${scanType}`
-            : 'First time scanning this URL with this tool',
-      },
+      user: updatedUser
+        ? {
+            _id: updatedUser._id,
+            usedScan: updatedUser.usedScan,
+            scanLimit: updatedUser.scanLimit,
+          }
+        : undefined,
     });
 
-    //  RUN SCAN ASYNCHRONOUSLY
-    runScanAsync(result._id.toString(), validation.url, scanType);
+    // Launch scanner in background using scan-runner
+    (async () => {
+      const scanId = savedScan._id.toString();
+      try {
+        // Guard: if process is already tracked (defensive), don't start another
+        if (hasProcess(scanId)) {
+          console.warn(
+            `[startScan][background] process already exists for scan ${scanId}`
+          );
+          return;
+        }
+
+        let hostname;
+        try {
+          hostname = new URL(finalUrl).hostname;
+          validateHostname(hostname); // This will throw if invalid
+        } catch (e) {
+          // Fallback for non-URL inputs
+          hostname = finalUrl
+            .replace(/^https?:\/\//, "")
+            .replace(/\/.*$/, "")
+            .replace(/^www\./, "");
+          validateHostname(hostname);
+        }
+
+        // Build executable + args for each scan type
+        switch (scanType) {
+          case "nmap": {
+            const args = [
+              "-Pn",
+              "-T4",
+              "-sV",
+              "-sC",
+              "-O",
+              "-v",
+              "--top-ports",
+              "1000",
+              "--max-retries",
+              "1",
+              "--host-timeout",
+              "240s",
+              hostname,
+            ];
+            await startProcess(scanId, "nmap", args, {
+              timeoutMs: 360000,
+              maxRaw: 400000,
+            });
+            break;
+          }
+          case "nikto": {
+            // ONLY use -Tuning b (don't use -Plugins outdated)
+            const args = [
+              "-h",
+              hostname,
+              "-port",
+              "80",
+              "-Tuning",
+              "b", // ONLY this - don't add -Plugins
+              "-maxtime",
+              "120s",
+              "-nointeractive",
+            ];
+
+            await startProcess(scanId, "nikto", args, { timeoutMs: 180000 });
+            break;
+          }
+          case "ssl": {
+            const args = ["--no-colour", hostname];
+            await startProcess(scanId, "sslscan", args, {
+              timeoutMs: 0, // No timeout (dangerous!)
+              maxRaw: 10000,
+            });
+            break;
+          } // Make sure to test with URLs that have parameters
+          case "sqlmap": {
+            let sqlmapUrl = finalUrl;
+            if (!sqlmapUrl.includes("?")) {
+              // Add a test parameter for vulnerable sites
+              sqlmapUrl += "?id=1";
+            }
+
+            const args = [
+              "-u",
+              sqlmapUrl,
+              "--batch",
+              "--smart",
+              "--level",
+              "1",
+              "--risk",
+              "1",
+              "--threads",
+              "1",
+              "--no-cast",
+              "--disable-coloring",
+            ];
+            await startProcess(scanId, "sqlmap", args, { timeoutMs: 185000 });
+            break;
+          }
+          default: {
+            // should not happen
+            await Scan.findByIdAndUpdate(scanId, {
+              status: "failed",
+              results: { error: "Unsupported scan type" },
+              updatedAt: new Date(),
+            });
+          }
+        }
+        // Note: scan-runner will update DB to completed/failed/cancelled on child close.
+      } catch (err) {
+        console.error(
+          "[startScan][background] scan runner error:",
+          err?.message || err
+        );
+        try {
+          await Scan.findByIdAndUpdate(savedScan._id, {
+            status: "failed",
+            results: { error: err?.message || "Scan runner failed to start" },
+            updatedAt: new Date(),
+          });
+        } catch (e) {
+          console.error("[startScan][background] DB update error:", e);
+        }
+      }
+    })();
   } catch (error) {
-    console.error(' Error in startScan:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    console.error("[startScan] Error:", error);
+    res.status(500).json({ success: false, error: "Failed to start scan" });
   }
 }
 
-// ASYNC FUNCTION TO RUN SCAN IN BACKGROUND
-async function runScanAsync(scanId, targetUrl, scanType) {
-  try {
-    console.log(`[RunScan] Starting ${scanType} scan for ${targetUrl}`);
-
-    let scanResult = {};
-
-    // Run only the selected scan type
-    switch (scanType) {
-      case 'nmap':
-        scanResult = await scanWithNmap(targetUrl);
-        break;
-      case 'sqlmap':
-        scanResult = await scanWithSqlmap(targetUrl);
-        break;
-      case 'ssl':
-        scanResult = await scanWithSsl(targetUrl);
-        break;
-      case 'nikto':
-        scanResult = await scanWithNikto(targetUrl);
-        break;
-      default:
-        throw new Error('Invalid scan type');
-    }
-
-    // Update scan with results
-    await Scan.findByIdAndUpdate(scanId, {
-      status: 'completed',
-      results: {
-        [scanType]: scanResult,
-      },
-      updatedAt: new Date(),
-    });
-
-    console.log(` Scan ${scanId} completed successfully`);
-  } catch (scanError) {
-    console.error(` Scan ${scanId} failed:`, scanError.message);
-
-    await Scan.findByIdAndUpdate(scanId, {
-      status: 'failed',
-      results: {
-        [scanType]: {
-          tool: scanType,
-          success: false,
-          error: scanError.message,
-        },
-      },
-      updatedAt: new Date(),
-    });
-  }
-}
-
-// SCAN HISTORY BY USER ID
+/* GET USER SCAN HISTORY */
 export async function getScanHistory(req, res) {
   try {
-    const userId = req.user.userId;
-    const scans = await userScanHistory(userId);
+    const userId = req.userId || req.user?.userId;
+    if (!userId)
+      return res.status(401).json({ success: false, error: "Unauthorized" });
 
-    // CALCULATE STATISTICS BY SCAN TYPE
-    const scanTypeStats = {};
-
-    scans.forEach(scan => {
-      if (!scanTypeStats[scan.scanType]) {
-        scanTypeStats[scan.scanType] = 0;
-      }
-      scanTypeStats[scan.scanType]++;
-    });
-
-    // CLEAN AND FORMAT SCAN DATA
-    const cleanScans = scans.map(scan => {
-      let resultSummary = null;
-
-      if (scan.status === 'completed' && scan.results) {
-        resultSummary = {};
-
-        if (scan.results.nmap?.openPorts) {
-          resultSummary.nmap = {
-            openPorts: scan.results.nmap.openPorts.length,
-            ports: scan.results.nmap.openPorts.slice(0, 5),
-          };
-        }
-
-        if (scan.results.nikto?.totalFindings !== undefined) {
-          resultSummary.nikto = {
-            findingsCount: scan.results.nikto.totalFindings,
-          };
-        }
-
-        if (scan.results.ssl?.totalIssues !== undefined) {
-          resultSummary.ssl = {
-            issuesCount: scan.results.ssl.totalIssues,
-          };
-        }
-
-        if (scan.results.sqlmap?.vulnerable !== undefined) {
-          resultSummary.sqlmap = {
-            vulnerable: scan.results.sqlmap.vulnerable,
-            vulnerabilityCount: scan.results.sqlmap.vulnerabilities?.length || 0,
-          };
-        }
-      }
-
-      return {
-        _id: scan._id.toString(),
-        scanId: scan._id.toString(),
-        targetUrl: scan.targetUrl,
-        scanType: scan.scanType,
-        status: scan.status,
-        createdAt: scan.createdAt,
-        updatedAt: scan.updatedAt,
-        resultSummary: resultSummary,
-        hasReport: !!scan.reportContent,
-        reportGeneratedAt: scan.reportGeneratedAt || null,
-      };
-    });
-
-    res.json({
-      success: true,
-      message: 'Scan history retrieved',
-      totalScans: cleanScans.length,
-      scanTypeBreakdown: scanTypeStats,
-      scans: cleanScans,
-    });
+    const scans = await Scan.find({ userId }).sort({ createdAt: -1 });
+    res.json({ success: true, scans });
   } catch (error) {
-    console.error('Error in getScanHistory:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    console.error("[getScanHistory] Error:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch scan history" });
   }
 }
 
-// SCAN'S RESULT BY ID
+/* GET SCAN RESULTS BY ID */
 export async function getScanResultsById(req, res) {
   try {
+    const userId = req.userId || req.user?.userId;
     const scanId = req.params.id;
-    const userId = req.user.userId;
 
-    console.log('=== GET SCAN RESULTS ===');
-    console.log('Scan ID:', scanId);
-    console.log('User ID:', userId);
+    if (!userId)
+      return res.status(401).json({ success: false, error: "Unauthorized" });
 
-    if (!scanId || scanId === 'undefined') {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid scan ID',
-      });
+    const scan = await Scan.findOne({ _id: scanId, userId: userId });
+
+    if (!scan) {
+      return res.status(404).json({ success: false, error: "Scan not found" });
     }
 
-    const result = await scanById(scanId, userId);
-
-    if (!result) {
-      return res.status(404).json({
-        success: false,
-        error: 'Scan not found',
-      });
-    }
-
-    console.log('Scan results fetched');
-
-    res.json({
-      success: true,
-      message: 'Scan results retrieved',
-      scan: {
-        _id: result._id.toString(),
-        targetUrl: result.targetUrl,
-        scanType: result.scanType,
-        status: result.status,
-        results: result.results,
-        reportContent: result.reportContent,
-        reportGeneratedAt: result.reportGeneratedAt,
-        createdAt: result.createdAt,
-        updatedAt: result.updatedAt,
-      },
-    });
+    res.json({ success: true, scan });
   } catch (error) {
-    console.error(' Error in getScanResultsById:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    console.error("[getScanResultsById] Error:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch scan result" });
   }
 }
 
-// CANCELING A SCAN
+/* CANCEL SCAN */
 export async function cancelScan(req, res) {
   try {
+    const userId = req.userId || req.user?.userId;
     const scanId = req.params.id;
-    const userId = req.user.userId;
 
-    if (!scanId || scanId === 'undefined') {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid scan ID',
-      });
-    }
+    if (!userId)
+      return res.status(401).json({ success: false, error: "Unauthorized" });
 
-    const scan = await Scan.findOne({
-      _id: scanId,
-      userId: userId,
-      status: 'running',
-    });
+    const scan = await Scan.findOne({ _id: scanId, userId: userId });
 
     if (!scan) {
-      return res.status(404).json({
-        success: false,
-        error: 'Scan not found or not running',
-        message: "Either scan doesn't exist or it's already completed/failed",
+      return res.status(404).json({ success: false, error: "Scan not found" });
+    }
+
+    // If scan is already completed/failed/cancelled, no-op
+    if (["completed", "failed", "cancelled"].includes(scan.status)) {
+      return res.json({
+        success: true,
+        message: `Scan already ${scan.status}`,
       });
     }
 
-    await Scan.findByIdAndUpdate(scanId, {
-      status: 'cancelled',
-      results: {
-        cancelled: true,
-        error: 'Scan cancelled by user',
-        cancelledAt: new Date(),
-        duration: Date.now() - new Date(scan.createdAt).getTime() + 'ms',
-      },
-      updatedAt: new Date(),
-    });
-
-    console.log(' Scan cancelled:', scanId);
-
-    res.json({
-      success: true,
-      message: 'Scan cancelled successfully',
-      scanId: scanId,
-      cancelledAt: new Date().toISOString(),
-    });
+    // Attempt to kill an active process (if exists)
+    try {
+      const result = await killProcess(scanId, `Cancelled by user ${userId}`);
+      if (result.killed) {
+        return res.json({
+          success: true,
+          message: "Scan cancelled successfully",
+        });
+      } else {
+        // No running process found, still mark cancelled
+        await Scan.findByIdAndUpdate(scanId, {
+          status: "cancelled",
+          results: {
+            cancelled: true,
+            error: "Cancelled by user (no active process found)",
+          },
+          updatedAt: new Date(),
+        });
+        return res.json({
+          success: true,
+          message: "Scan marked cancelled (no active process found)",
+        });
+      }
+    } catch (err) {
+      console.error("[cancelScan] killProcess error:", err);
+      // fallback: mark cancelled in DB
+      await Scan.findByIdAndUpdate(scanId, {
+        status: "cancelled",
+        results: {
+          cancelled: true,
+          error: "Cancelled by user (kill attempt failed)",
+        },
+        updatedAt: new Date(),
+      });
+      return res
+        .status(500)
+        .json({ success: false, error: "Failed to cancel scan process" });
+    }
   } catch (error) {
-    console.error(' Error in cancelScan:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    console.error("[cancelScan] Error:", error);
+    res.status(500).json({ success: false, error: "Failed to cancel scan" });
   }
 }
