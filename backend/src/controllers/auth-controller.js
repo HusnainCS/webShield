@@ -129,9 +129,9 @@ export async function resetPassword(req, res) {
       });
     }
 
-    // ENCRYPTING PASSWORD
-    const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = bcrypt.hashSync(newPassword, salt);
+// ENCRYPTING PASSWORD
+const salt = await bcrypt.genSalt(10);
+const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     // UPDATING USER PASSWORD
     await User.findOneAndUpdate(

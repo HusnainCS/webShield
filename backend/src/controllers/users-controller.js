@@ -90,7 +90,7 @@ export async function checkUser(user) {
   }
 }
 
-//  Login handler with cookie setting
+//  Login handler with cookie 
 export async function loginUser(req, res) {
   try {
     const { email, password, emailOrUsername } = req.body;
@@ -176,13 +176,13 @@ export async function signupUser(req, res) {
 
     // Create user
     const newUser = await createUser({
-      username,
-      email,
-      password: hashedPassword,
-      role: "user",
-      scanLimit: 10,
-      scanUsed: 0,
-    });
+  username,
+  email,
+  password: hashedPassword,
+  role: "user",
+  scanLimit: 10,
+  usedScan: 0,
+});
 
     // Generate token
     const token = jwt.sign(

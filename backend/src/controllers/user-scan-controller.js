@@ -10,7 +10,7 @@ import { validateHostname } from "../utils/validations/hostname-validation.js";
 
 const ALLOWED_SCANS = ["nmap", "nikto", "ssl", "sqlmap"];
 
-/* START NEW SCAN */
+// START NEW SCAN 
 export async function startScan(req, res) {
   try {
     const userId = req.userId || req.user?.userId;
@@ -33,7 +33,7 @@ export async function startScan(req, res) {
         .json({ success: false, error: "Invalid scanType" });
     }
 
-    // Validate URL and normalize
+    // Validate URL
     const validation = urlValidation(targetUrl);
     if (!validation.valid) {
       return res.status(400).json({ success: false, error: validation.error });
@@ -86,14 +86,14 @@ export async function startScan(req, res) {
       { new: true }
     ).select("-password");
 
-    // Mark scan as running and attach startedAt
+    // Mark scan as running and attach startedat
     await Scan.findByIdAndUpdate(savedScan._id, {
       status: "running",
       updatedAt: new Date(),
       startedAt: new Date(),
     });
 
-    // Respond to client immediately with scanId
+    // Respond immediately with scanId
     res.status(201).json({
       success: true,
       message: "Scan started",
@@ -117,7 +117,7 @@ export async function startScan(req, res) {
     (async () => {
       const scanId = savedScan._id.toString();
       try {
-        // Guard: if process is already tracked (defensive), don't start another
+        // if process is already tracke, don't start another
         if (hasProcess(scanId)) {
           console.warn(
             `[startScan][background] process already exists for scan ${scanId}`
@@ -128,7 +128,7 @@ export async function startScan(req, res) {
         let hostname;
         try {
           hostname = new URL(finalUrl).hostname;
-          validateHostname(hostname); // This will throw if invalid
+          validateHostname(hostname);
         } catch (e) {
           // Fallback for non-URL inputs
           hostname = finalUrl
@@ -163,14 +163,13 @@ export async function startScan(req, res) {
             break;
           }
           case "nikto": {
-            // ONLY use -Tuning b (don't use -Plugins outdated)
             const args = [
               "-h",
               hostname,
               "-port",
               "80",
               "-Tuning",
-              "b", // ONLY this - don't add -Plugins
+              "b", 
               "-maxtime",
               "120s",
               "-nointeractive",
@@ -220,7 +219,7 @@ export async function startScan(req, res) {
             });
           }
         }
-        // Note: scan-runner will update DB to completed/failed/cancelled on child close.
+        //scan-runner will update DB to completed/failed/cancelled on child close.
       } catch (err) {
         console.error(
           "[startScan][background] scan runner error:",
@@ -243,7 +242,7 @@ export async function startScan(req, res) {
   }
 }
 
-/* GET USER SCAN HISTORY */
+//  GET USER SCAN HISTORY 
 export async function getScanHistory(req, res) {
   try {
     const userId = req.userId || req.user?.userId;
@@ -260,7 +259,7 @@ export async function getScanHistory(req, res) {
   }
 }
 
-/* GET SCAN RESULTS BY ID */
+// GET SCAN RESULTS BY ID 
 export async function getScanResultsById(req, res) {
   try {
     const userId = req.userId || req.user?.userId;
@@ -284,7 +283,7 @@ export async function getScanResultsById(req, res) {
   }
 }
 
-/* CANCEL SCAN */
+// CANCEL SCAN 
 export async function cancelScan(req, res) {
   try {
     const userId = req.userId || req.user?.userId;
@@ -299,7 +298,7 @@ export async function cancelScan(req, res) {
       return res.status(404).json({ success: false, error: "Scan not found" });
     }
 
-    // If scan is already completed/failed/cancelled, no-op
+    // If scan is already completed/failed/cancelled
     if (["completed", "failed", "cancelled"].includes(scan.status)) {
       return res.json({
         success: true,

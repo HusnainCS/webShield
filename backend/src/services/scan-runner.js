@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 import { Scan } from "../models/scans-mongoose.js";
-import { parseByTool } from "./scan-parsers.js";
+import { parseByTool } from "../utils/scan-parsers.js";
 
 const processes = new Map();
 
@@ -15,8 +15,8 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
 
   const maxRaw = opts.maxRaw || 200_000;
   const timeoutMs = opts.timeoutMs || 300_000;
-  const logIntervalMs = opts.logIntervalMs || 2000; // write partial logs every 2s
-  const maxPartial = opts.maxPartial || 50_000; // store last N chars in DB
+  const logIntervalMs = opts.logIntervalMs || 2000;
+  const maxPartial = opts.maxPartial || 50_000;
 
   try {
     const child = spawn(executable, args, {
@@ -27,7 +27,6 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
     let timeoutTimer = null;
     let logInterval = null;
 
-    // Safety timeout kills process after timeoutMs
     timeoutTimer = setTimeout(() => {
       try {
         child.kill("SIGTERM");
@@ -48,6 +47,18 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
       }
     }, logIntervalMs);
 
+  processes.set(scanId, {
+  child,
+  buffers,
+  timeoutTimer,
+  logInterval,
+  executable,
+  args,
+  maxPartial,
+  maxRaw,
+  timeoutMs,
+  logIntervalMs,
+});
     child.stdout.on("data", (chunk) => {
       buffers.stdout += chunk.toString();
       if (buffers.stdout.length > maxRaw)
@@ -58,15 +69,6 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
       buffers.stderr += chunk.toString();
       if (buffers.stderr.length > maxRaw)
         buffers.stderr = buffers.stderr.slice(-maxRaw);
-    });
-
-    processes.set(scanId, {
-      child,
-      buffers,
-      timeoutTimer,
-      logInterval,
-      executable,
-      args,
     });
 
     child.on("close", async (code, signal) => {
@@ -83,15 +85,14 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
 
       try {
         if (signal === "SIGTERM") {
+          const mp = procEntry?.maxPartial || 50000;
           await Scan.findByIdAndUpdate(scanId, {
             status: "cancelled",
             results: {
               cancelled: true,
               error: "Process terminated (SIGTERM)",
               rawOutput: out || err,
-              partialOutput: out
-                ? out.slice(-maxPartial)
-                : err.slice(-maxPartial),
+              partialOutput: out ? out.slice(-mp) : err.slice(-mp),
             },
             updatedAt: new Date(),
             completedAt: new Date(),
@@ -99,19 +100,14 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
           return;
         }
 
-        // Get parsed results first
         const guessedTarget = procEntry?.args?.slice(-1)?.[0] || "";
         const parsed = parseByTool(executable, out || err, guessedTarget);
 
-        // Determine status based on tool and results
         let status = "failed";
 
         if (code === 0) {
-          // Exit code 0 always means success
           status = "completed";
         } else if (executable.includes("nikto")) {
-          // For Nikto: if it found vulnerabilities or completed scan, mark as completed
-          // Nikto often exits with non-zero when it finds vulnerabilities but has some errors
           if (
             parsed.success ||
             (parsed.scanStats && parsed.scanStats.scanCompleted) ||
@@ -120,26 +116,19 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
             status = "completed";
           }
         } else if (executable.includes("nmap")) {
-          // For Nmap: if it found open ports or completed scan
-          if (
-            parsed.success ||
-            (parsed.openPorts && parsed.openPorts.length > 0)
-          ) {
+          if (parsed.success || (parsed.openPorts && parsed.openPorts.length > 0)) {
             status = "completed";
           }
         } else if (executable.includes("sqlmap")) {
-          // For SQLMap: if vulnerable flag is true
           if (parsed.success || parsed.vulnerable) {
             status = "completed";
           }
         } else if (executable.includes("ssl")) {
-          // For SSL: if scan completed
           if (parsed.success !== undefined) {
             status = "completed";
           }
         }
 
-        // Update database with appropriate status
         await Scan.findByIdAndUpdate(scanId, {
           status: status,
           results: parsed,
@@ -148,13 +137,13 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
         });
       } catch (dbErr) {
         console.error("[scan-runner] DB update error on close:", dbErr);
-        // Last resort: save raw output
         try {
+          const mp = (procEntry && procEntry.maxPartial) || 50000;
           await Scan.findByIdAndUpdate(scanId, {
             status: "failed",
             results: {
               rawOutput: out || err,
-              partialOutput: (out || err).slice(-maxPartial),
+              partialOutput: (out || err).slice(-mp),
               error: "DB update failed: " + (dbErr.message || "unknown"),
             },
             updatedAt: new Date(),
@@ -171,14 +160,13 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
       if (logInterval) clearInterval(logInterval);
       processes.delete(scanId);
       try {
+        const mp = processes.get(scanId)?.maxPartial || maxPartial;
         await Scan.findByIdAndUpdate(scanId, {
           status: "failed",
           results: {
             error: err.message,
             rawOutput: buffers.stdout || buffers.stderr,
-            partialOutput: (buffers.stdout || buffers.stderr).slice(
-              -maxPartial
-            ),
+            partialOutput: (buffers.stdout || buffers.stderr).slice(-mp),
           },
           updatedAt: new Date(),
           completedAt: new Date(),
@@ -223,6 +211,8 @@ export async function killProcess(scanId, reason = "Killed by user") {
     if (entry.timeoutTimer) clearTimeout(entry.timeoutTimer);
     if (entry.logInterval) clearInterval(entry.logInterval);
 
+    const mp = entry.maxPartial || 50000;
+
     entry.child.kill("SIGTERM");
     processes.delete(scanId);
 
@@ -232,7 +222,7 @@ export async function killProcess(scanId, reason = "Killed by user") {
         results: {
           cancelled: true,
           error: reason,
-          partialOutput: (entry.buffers?.stdout || "").slice(-maxPartial),
+          partialOutput: (entry.buffers?.stdout || "").slice(-mp),
         },
         updatedAt: new Date(),
         completedAt: new Date(),

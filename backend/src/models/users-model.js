@@ -5,35 +5,35 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// CREATING USER WHEN SIGN UP
 export async function createUser(user) {
   try {
-    const exsitingUser = await User.findOne({
+    const existingUser = await User.findOne({
       $or: [{ username: user.username }, { email: user.email }],
     });
 
-    // CHECKING USER WITH USERNAME ARE THEY ALREADY EXISTS
-    if (exsitingUser) {
-      if (exsitingUser.username === user.username) {
+    if (existingUser) {
+      if (existingUser.username === user.username) {
         throw new Error("Username already exists");
       }
-      if (exsitingUser.email === user.email) {
+      if (existingUser.email === user.email) {
         throw new Error("Email already exists");
       }
     }
 
-    // ENCRYPTING PASSWORD
-    const salt = bcrypt.genSaltSync(10);
-    const hashedPass = bcrypt.hashSync(user.password, salt);
+    // Use async bcrypt methods (non-blocking)
+    const salt = await bcrypt.genSalt(10);
+    const hashedPass = await bcrypt.hash(user.password, salt);
 
-    const newUser = await createUser({
-      username,
-      email,
+    // Create a Mongoose model instance (do NOT call createUser recursively)
+    const newUser = new User({
+      username: user.username,
+      email: user.email,
       password: hashedPass,
-      role: "user",
-      scanLimit: 15,
-      usedScan: exsitingUser.usedScan || 0,
+      role: user.role || "user",
+      scanLimit: user.scanLimit != null ? user.scanLimit : 15,
+      usedScan: user.usedScan != null ? user.usedScan : 0,
     });
+
     const savedUser = await newUser.save();
     return savedUser;
   } catch (error) {
@@ -42,7 +42,7 @@ export async function createUser(user) {
   }
 }
 
-// VERIFYING USE WHILE SIGNNING IN
+// Optionally keep verifyUser here (no change) or move to controller as needed
 export async function verifyUser(user) {
   try {
     const identifier = user.emailOrUsername;

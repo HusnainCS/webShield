@@ -7,7 +7,7 @@ export async function getScanStatistics(userId, targetUrl, scanType) {
     normalizedUrl = normalizedUrl
       .replace(/^https?:\/\//, '')
       .replace(/^http?:\/\//, '')
-      .replace(/^www\. /, '')
+      .replace(/^www\./, '')
       .replace(/\/$/, '')
       .trim();
 

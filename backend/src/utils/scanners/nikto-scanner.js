@@ -19,7 +19,7 @@ export async function scanWithNikto(targetUrl) {
 
     console.log('start scanning nikto for', hostname);
 
-    // USE ONLY -Tuning b (no -Plugins outdated)
+    // USE ONLY -Tuning b 
     const command = `timeout 180 nikto -h ${hostname} -port 80 -Tuning b -maxtime 120s -nointeractive`;
 
     console.log('Running Nikto command:', command);

@@ -2,7 +2,7 @@ import { User } from "../models/users-mongoose.js";
 import { Scan } from "../models/scans-mongoose.js";
 import { killProcess } from "../services/scan-runner.js";
 
-/* ALL SCANS HISTORY FOR ADMIN */
+// ALL SCANS HISTORY FOR ADMIN 
 export async function getAllScanHistory(req, res) {
   try {
     const allScans = await Scan.find({}).sort({ createdAt: -1 }).lean();
@@ -22,7 +22,7 @@ export async function getAllScanHistory(req, res) {
   }
 }
 
-/* USER SCAN HISTORY BY ID FROM ADMIN */
+//  USER SCAN HISTORY BY ID FROM ADMIN 
 export async function getUserScanHistoryAdmin(req, res) {
   try {
     const userId = req.params.userId;
@@ -66,7 +66,7 @@ export async function getUserScanHistoryAdmin(req, res) {
   }
 }
 
-/* DELETING A SCAN (FOR ADMIN) */
+//  DELETING A SCAN (FOR ADMIN) 
 export async function removeScan(req, res) {
   try {
     const scanId = req.params.id;
@@ -110,7 +110,7 @@ export async function removeScan(req, res) {
   }
 }
 
-/* UPGRADING USER'S SCAN LIMIT (FOR ADMIN) */
+//  UPGRADING USER'S SCAN LIMIT (FOR ADMIN) 
 export async function upgradeUserScan(req, res) {
   try {
     const { userId, scanLimit } = req.body;
@@ -172,10 +172,10 @@ export async function getAdminStats(req, res) {
 
     // Recent users and scans (limit to last 5 each to avoid huge payloads)
     const recentUsers = await User.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select("username email role createdAt")
-      .lean();
+  .sort({ createdAt: -1 })
+  .limit(5)
+  .select("username email role createdAt")
+  .lean();
 
     const recentScans = await Scan.find()
       .sort({ createdAt: -1 })

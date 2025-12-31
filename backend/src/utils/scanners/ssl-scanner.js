@@ -42,12 +42,12 @@ export async function scanWithSsl(targetUrl) {
       let stdout = "";
       let stderr = "";
       const MAX_RAW = 10000;
-      // const TIMEOUT_MS = 180000;
-      // const timer = setTimeout(() => {
-      //   try {
-      //     child.kill("SIGTERM");
-      //   } catch {}
-      // }, TIMEOUT_MS);
+      const TIMEOUT_MS = 180000;
+      const timer = setTimeout(() => {
+        try {
+          child.kill("SIGTERM");
+        } catch {}
+      }, TIMEOUT_MS);
 
       child.stdout.on("data", (chunk) => {
         stdout += chunk.toString();

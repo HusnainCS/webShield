@@ -19,7 +19,6 @@ function ensureNmapStructuredFromRaw(scan) {
 
   // If structured exists and looks good, skip heavy fallback
   if (hasUseful) {
-    // still ensure cveList exists if present in raw
     const cves = Array.from(
       new Set(
         (raw.match(/CVE-\d{4}-\d{4,7}/gi) || []).map((c) => c.toUpperCase())
@@ -49,7 +48,6 @@ function ensureNmapStructuredFromRaw(scan) {
   const sshHostKeys = [];
 
   for (const line of lines) {
-    // Example port line: "22/tcp    open  ssh    OpenSSH 6.6.1p1 Ubuntu 2ubuntu2.13 (Ubuntu Linux; protocol 2.0)"
     const portMatch = line.match(/^(\d+)\/(tcp|udp)\s+(\S+)\s+(.*)$/i);
     if (portMatch) {
       const port = portMatch[1];
@@ -145,7 +143,7 @@ function ensureNmapStructuredFromRaw(scan) {
   scan.results.nmap = merged;
 }
 
-/* ---------- Helper function to get tool-specific results ---------- */
+// Helper function to get tool-specific results 
 function getToolResults(scan) {
   if (!scan.results) return null;
 
@@ -164,7 +162,7 @@ function getToolResults(scan) {
   }
 }
 
-/* ---------- Diagnostics helpers ---------- */
+// Diagnostics helpers
 
 function analyzeNmapOutput(raw = "") {
   const s = String(raw || "");
@@ -263,7 +261,7 @@ function niktoDiagnostic(scan) {
   // Check if scan completed
   if (results.scanStats?.scanCompleted) {
     if (results.totalFindings > 0) {
-      return null; // No diagnostic needed - scan found results
+      return null; 
     } else {
       return "Diagnostics: Scan completed but found no vulnerabilities.";
     }
@@ -295,7 +293,7 @@ function sqlmapDiagnostic(scan) {
   return null;
 }
 
-/* ---------- Raw results builder with diagnostics ---------- */
+// Raw results builder with diagnostics
 
 function buildRawResults(scan) {
   let results = "";
@@ -514,7 +512,7 @@ function buildRawResults(scan) {
   return results || "No detailed results available";
 }
 
-/* ---------- Prompt builder for AI ---------- */
+// Prompt builder for AI 
 
 function buildSummaryText(scan) {
   let text = `
@@ -634,7 +632,7 @@ INSTRUCTIONS FOR AI:
   return text;
 }
 
-/* ---------- buildReportContent ---------- */
+//  buildReportContent 
 
 function buildReportContent(scan, aiText) {
   const divider = "=".repeat(70);
@@ -674,7 +672,7 @@ Report ID:  ${scan._id}
 `;
 }
 
-/* ---------- Main handler: generateAIReportForScan ---------- */
+// generateAIReportForScan 
 
 export const generateAIReportForScan = async (req, res) => {
   try {
@@ -700,8 +698,6 @@ export const generateAIReportForScan = async (req, res) => {
         generatedAt: scan.reportGeneratedAt,
         scanId: scan._id,
       });
-
-    // Ensure we have structured nmap data when possible (fallback from raw output)
     try {
       ensureNmapStructuredFromRaw(scan);
       // Persist parsed fallback fields so future report generation sees them
@@ -774,7 +770,7 @@ export const generateAIReportForScan = async (req, res) => {
   }
 };
 
-/* ---------- Download & view handlers ---------- */
+// Download & view handlers 
 
 export const downloadReport = async (req, res) => {
   try {

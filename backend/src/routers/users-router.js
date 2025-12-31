@@ -7,6 +7,7 @@ import { checkUser, addUser } from "../controllers/users-controller.js";
 import { checkAuth } from "../middlewares/user-auth.js";
 import { User } from "../models/users-mongoose.js";
 import dotenv from "dotenv";
+import { loginLimiter } from "../middlewares/rate-limiter.js";
 dotenv.config();
 
 const userRouter = express.Router();
@@ -51,7 +52,7 @@ userRouter.post("/signup", signUpValidation, async (req, res) => {
 });
 
 // LOGIN ROUTE
-userRouter.post("/login", loginValidation, async (req, res) => {
+userRouter.post("/login", loginValidation,loginLimiter, async (req, res) => {
   try {
     const user = req.body;
 
@@ -73,8 +74,8 @@ userRouter.post("/login", loginValidation, async (req, res) => {
 const isProduction = process.env.NODE_ENV === 'production';
 const cookieOptions = {
   httpOnly: true,
-  secure: isProduction, // Only HTTPS in production
-  sameSite: isProduction ? 'strict' : 'lax', // Strict in production
+  secure: isProduction, 
+  sameSite: isProduction ? 'strict' : 'lax', 
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/",
 };
@@ -152,12 +153,13 @@ userRouter.post('/logout', async (req, res) => {
     console.log('[Logout] Clearing cookie');
     
     
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure:  process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-    });
+   const isProduction = process.env.NODE_ENV === 'production';
+res.clearCookie('token', {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'strict' : 'lax',
+  path: '/',
+});
 
     res.json({
       success: true,
