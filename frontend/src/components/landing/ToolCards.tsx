@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// components/landing/ToolCards.tsx
 import "./ToolCards.css";
 
 const ToolCards = () => {

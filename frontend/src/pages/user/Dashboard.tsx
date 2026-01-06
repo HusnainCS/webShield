@@ -75,16 +75,14 @@ const Dashboard = () => {
       <div className="nav-strip">
         <span>WebShield • Secure. Scan. Repeat.</span>
         <div className="nav-right">
-          <button onClick={() => navigate("/dashboard")}>Dashboard</button>
           <button onClick={() => navigate("/start-scan")}>Start Scan</button>
-          <button onClick={() => navigate("/scan-history")}>History</button>
           <button onClick={() => navigate("/about-tools")}>Tools Info</button>
         </div>
       </div>
 
       <div className="top-bar">
         <div className="top-left">
-          <div className="logo-circle">
+    <div className="logo-circle">
   <img src="/logo.gif" alt="WebShield Logo" className="logo-animated" />
 </div>
 

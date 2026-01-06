@@ -1,4 +1,3 @@
-// components/landing/HeroSection.tsx
 import { Link } from "react-router-dom";
 import "./HeroSection.css";
 

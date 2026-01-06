@@ -1,107 +1,99 @@
+import React from "react";
 import "../../styles/about-tools.css";
 
 const toolData = [
   {
     id: "nmap",
     title: "Nmap",
-    subtitle: "Network discovery & port scanning",
-    badges: ["Ports", "Services", "Versions"],
+    subtitle: "Find open ports and services",
+    badges: ["Ports", "Services", "Network"],
     description:
-      "Discovers hosts and services by sending packets and analyzing responses. Great for mapping exposed ports and service versions.",
-    tips: [
-      "Use -sV to detect service versions.",
-      "Use -Pn to skip host discovery if ICMP is blocked.",
-      "Keep scans within permissioned scope.",
-    ],
+      "Scans a website or server to find which network ports are open and what services run on them. Good to see what is exposed to the internet.",
+    whenToUse: "When you want to see which services are reachable from the internet."
   },
   {
     id: "nikto",
     title: "Nikto",
-    subtitle: "Web server vulnerability scanner",
-    badges: ["Web", "Misconfig", "Dangerous files"],
+    subtitle: "Quick web server check",
+    badges: ["Web", "Config", "Files"],
     description:
-      "Checks web servers for dangerous files, outdated software, and common misconfigurations. Fast baseline for web endpoints.",
-    tips: [
-      "Run after identifying the exact host/port.",
-      "Pair with HTTPS (set the correct port).",
-      "Review false positives—some findings are informational.",
-    ],
+      "Checks a web server for outdated software, common misconfigurations, and dangerous files. Fast way to find basic web issues.",
+    whenToUse: "When you want a quick baseline check of a website (not deep tests)."
   },
   {
     id: "sqlmap",
     title: "SQLMap",
-    subtitle: "SQL injection detection",
-    badges: ["DB", "SQLi", "Automation"],
+    subtitle: "Tests for database injection",
+    badges: ["Database", "SQLi", "Automated"],
     description:
-      "Automates detection and exploitation of SQL injection flaws. Supports multiple DB engines and tamper scripts.",
-    tips: [
-      "Start with low risk/level to reduce impact.",
-      "Use --batch cautiously; review prompts in manual mode.",
-      "Only test targets you own or are authorized to assess.",
-    ],
+      "Looks for SQL injection weaknesses that allow attackers to read or change data. Only use on sites you own or have permission to test.",
+    whenToUse: "When you suspect user input may change or read the database (only with permission)."
   },
   {
     id: "sslscan",
     title: "SSLScan",
-    subtitle: "SSL/TLS checker",
+    subtitle: "Checks TLS/SSL security",
     badges: ["TLS", "Ciphers", "Protocols"],
     description:
-      "Tests SSL/TLS endpoints to report supported cipher suites, protocol versions, and common weaknesses.",
-    tips: [
-      "Look for weak ciphers/protocols (SSLv2/3, old TLS).",
-      "Prefer modern suites (TLS 1.2/1.3, strong ciphers).",
-      "Re-run after server config changes to verify fixes.",
-    ],
+      "Tests the website's TLS/SSL settings to show supported versions and weak ciphers. Helps confirm secure encryption is used.",
+    whenToUse: "When you want to verify a site uses up-to-date TLS and safe ciphers."
   },
 ];
 
-const AboutTools = () => {
+const AboutTools: React.FC = () => {
   return (
     <div className="about-container">
       <div className="about-hero">
         <div>
           <h1 className="text-gradient">About Security Tools</h1>
           <p className="about-sub">
-            What each scanner does, when to use it, and quick best-practice
-            tips.
+            Simple explanations of what each scanner does and when to use it.
           </p>
         </div>
       </div>
 
       <div className="about-grid">
         {toolData.map((tool) => (
-          <div className="about-card" key={tool.id}>
-            <div className="about-head">
-              <div className="about-icon">{tool.title.charAt(0)}</div>
+          <article
+            className="about-card"
+            key={tool.id}
+            aria-labelledby={tool.id}
+            tabIndex={0}
+          >
+            <header className="about-head">
+              <div className="about-icon" aria-hidden>
+                {tool.title.charAt(0)}
+              </div>
               <div>
-                <h3>{tool.title}</h3>
+                <h3 id={tool.id} className="about-title">
+                  {tool.title}
+                </h3>
                 <p className="about-subtitle">{tool.subtitle}</p>
               </div>
-            </div>
+            </header>
 
             <p className="about-desc">{tool.description}</p>
 
-            <div className="about-badges">
+            <div className="about-badges" aria-hidden>
               {tool.badges.map((b) => (
-                <span key={b}>{b}</span>
+                <span key={b} className="badge">
+                  {b}
+                </span>
               ))}
             </div>
 
-            <div className="about-tips">
-              <div className="tips-title">Tips</div>
-              <ul>
-                {tool.tips.map((t, i) => (
-                  <li key={i}>{t}</li>
-                ))}
-              </ul>
+            {/* Extra one-line detail shown by default in a subtle box */}
+            <div className="about-more">
+              <div className="more-title">When to use</div>
+              <div className="more-text">{tool.whenToUse}</div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
 
       <div className="legal-note">
-        Use these tools only on systems you own or have explicit permission to
-        test.
+        Use these tools only on websites or servers you own or where you have
+        explicit permission to test.
       </div>
     </div>
   );
