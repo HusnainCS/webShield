@@ -57,8 +57,12 @@ const StartScan = () => {
 
   const isValidUrl = (urlString: string) => {
     try {
-      const u = new URL(urlString);
-      return u.protocol === "http:" || u.protocol === "https:";
+      const u = new URL(urlString.trim());
+      return (
+        (u.protocol === "http:" || u.protocol === "https:") &&
+        !/https?:\/\/.+https?:\/\//.test(urlString.trim()) &&
+        !urlString.trim().includes(" ")
+      );
     } catch {
       return false;
     }
@@ -84,13 +88,25 @@ const StartScan = () => {
       setError("Please enter a valid URL starting with http:// or https://");
       return;
     }
+    if (/https?:\/\/.+https?:\/\//.test(url.trim())) {
+      setError(
+        "URL contains multiple protocols. Please enter a valid single URL (e.g., https://example.com)"
+      );
+      return;
+    }
+    if (/http?:\/\/.+http?:\/\//.test(url.trim())) {
+      setError(
+        "URL contains multiple protocols. Please enter a valid single URL (e.g., http://example.com)"
+      );
+      return;
+    }
 
     try {
       setLoading(true);
       const mappedScanType = tool === "sslscan" ? "ssl" : tool;
 
       const scanData = {
-        targetUrl: url.trim(),
+        targetUrl: url.trim().replace(/\/+$/, ""),
         scanType: mappedScanType,
       };
 
