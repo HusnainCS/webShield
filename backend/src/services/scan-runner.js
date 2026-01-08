@@ -100,8 +100,14 @@ export async function startProcess(scanId, executable, args = [], opts = {}) {
           return;
         }
 
-        const guessedTarget = procEntry?.args?.slice(-1)?.[0] || "";
-        const parsed = parseByTool(executable, out || err, guessedTarget);
+        function getTargetFromArgs(args) {
+  const idx = args.findIndex(arg => arg === '-u');
+  if (idx !== -1 && args.length > idx + 1) return args[idx + 1];
+  return "";
+}
+
+const guessedTarget = getTargetFromArgs(procEntry?.args || []);
+const parsed = parseByTool(executable, out || err, guessedTarget);;
 
         let status = "failed";
 
