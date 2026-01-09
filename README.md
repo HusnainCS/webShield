@@ -1,71 +1,71 @@
-# WebShield 
+# WebShield Security Scanner - Local Development
 
-WebShield is a beginner-friendly frontend React app for scanning websites for vulnerabilities using popular security tools.
+A complete web security scanning platform for local development and testing. Run both frontend and backend services locally to test website security vulnerabilities.
 
-## Features
+## 🚀 Quick Start Guide
 
-- User authentication (login/logout)
-- Scan websites for vulnerabilities with tools  Nmap, Nikto, SQLMap, SSLScan
-- Dashboard to see scan history and usage
-- Beautiful UI with animated icons
-- Intelligent form validation for URLs, email, password, etc.
-- Protected routes (dashboard, scan pages) for logged-in users
+### 1. Start Backend Server
+```bash
+cd backend
+npm install
+npm start
+```
+Backend server will run at: http://localhost:4000
 
-## Technologies Used
+### 2. Start Frontend Server
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Frontend will open at: http://localhost:5173
 
-- **React** (with TypeScript & Vite)
-- **Axios** (for API calls)
-- **React Router** (page navigation)
-- **Lottie React** (pretty animations)
-- **Custom Context** (auth and user data)
-- **CSS / Tailwind** (for styling)
+### Environment Configuration
+Backend Setup (in backend/ folder)
+Create a .env file with:
 
-##  Workflow
+.env
+```bash
+DB_URL=mongodb://localhost:27017/webshield
+JWT_SECRET=your-secret-key-here
+PORT=4000
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
+GROQ_API=your-groq-api
+```
+### Core Features
+User Authentication System - Secure login, registration, and profile management
+Multiple Security Tools - Integrated scanning with 4 powerful tools:
+Nmap - Network port and service detection
+Nikto - Web server vulnerability scanning
+SQLmap - SQL injection testing
+SSLScan - TLS/SSL security analysis
+Real-time Scan Monitoring - Live progress tracking with detailed logs
+AI-Powered Analysis - Intelligent vulnerability assessment and recommendations
+Dashboard & History - Track all scans and usage statistics
+Report Generation - Download detailed security reports
 
-1. **User logs in/signup**
-2. **Chooses a security tool & enters a website URL**
-3. **App validates inputs and starts a scan**
-4. **Shows scan progress and results**
-5. **User can view past scans on their dashboard**
+### Required System Tools:
+Nmap (brew install nmap or apt install nmap)
+Nikto (brew install nikto or apt install nikto)
+SQLmap (brew install sqlmap or apt install sqlmap)
+SSLScan (brew install sslscan or apt install sslscan)
+
+### Security & Ethical Guidelines
+CRITICAL: USE RESPONSIBLY
+This tool is designed for ethical security testing only:
+
+## Permitted Uses:
+Testing your own websites and applications
+Authorized penetration testing with written permission
+Educational purposes in controlled environments
+Security research with proper authorization
+
+## Strictly Prohibited:
+Scanning websites without explicit permission
+Attempting to breach systems you don't own
+Any illegal or malicious activities
+Disrupting services or causing damage
+You are solely responsible for ensuring your activities are legal and ethical.
 
 
-
-1. **Install dependencies**
-    ```bash
-    npm install
-    ```
-
-2. **Set environment variables**
-    - Create a `.env` file in root:
-      ```
-      VITE_API_URL=http://localhost:4000
-      ```
-      *(or public backend URL for production)*
-
-3. **Run development server**
-    ```bash
-    npm run dev
-    ```
-    The app will open at [http://localhost:5173](http://localhost:5173)
-
-## Key Concepts
-
-- **`useState`** – Save and update values in your component.
-- **`useEffect`** – Run code after page loads or something changes.
-- **`useContext`** – Share login/user info to all pages.
-- **Form validation** – Keep data clean and safe before starting a scan.
-- **Protected Routes** – Only show dashboard and scanning pages to logged-in users.
-
-##  Example Usage
-
-- Start a scan with a valid web address (e.g. `https://example.com`)
-- Choose a tool (Nmap, Nikto, etc.)
-- View live progress & result
-- Check dashboard for previous scans
-
-## Legal & Ethical Notes
-
-- Only scan websites you *own* or *have permission* to test.
-- This tool is for educational and ethical use only!
-
----
